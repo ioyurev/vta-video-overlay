@@ -1,0 +1,61 @@
+from typing import List
+from decimal import Decimal
+import shutil
+import json
+import subprocess
+import pathlib
+
+
+def get_pts(packets) -> List[int]:
+    pts: List[int] = []
+
+    for packet in packets:
+        pts.append(int(Decimal(packet["pts_time"]) * 1000))
+
+    pts.sort()
+    return pts
+
+
+def get_timestamps(video_path: pathlib.Path, index: int = 0) -> List[int]:
+    # source: https://stackoverflow.com/a/73998721/11709825
+    """
+    Link: https://ffmpeg.org/ffprobe.html
+    My comments:
+        Works really well, but the user need to have FFMpeg in his environment variables.
+
+    Parameters:
+        video (pathlib.Path): Video path
+        index (int): Index of the stream of the video
+    Returns:
+        List of timestamps in ms
+        :param index:
+        :param video_path:
+    """
+
+    # Verify if ffprobe is installed
+    if shutil.which("ffprobe") is None:
+        raise Exception("ffprobe is not in the environment variable.")
+
+    # Getting video absolute path and checking for its existance
+    video_path = video_path.resolve()
+    if not video_path.is_file():
+        raise FileNotFoundError(f'Invalid path for the video file: "{video_path}"')
+
+    cmd = f'ffprobe -select_streams {index} -show_entries packet=pts_time:stream=codec_type "{video_path}" -print_format json'
+    ffprobe_output = subprocess.run(cmd, capture_output=True, text=True)
+    ffprobe_output = json.loads(ffprobe_output.stdout)
+
+    if len(ffprobe_output) == 0:  # type: ignore
+        raise Exception(
+            f"The file {video_path} is not a video file or the file does not exist."
+        )
+
+    if len(ffprobe_output["streams"]) == 0:  # type: ignore
+        raise ValueError(f"The index {index} is not in the file {video_path}.")
+
+    if ffprobe_output["streams"][0]["codec_type"] != "video":  # type: ignore
+        raise ValueError(
+            f'The index {index} is not a video stream. It is an {ffprobe_output["streams"][0]["codec_type"]} stream.'  # type: ignore
+        )
+
+    return get_pts(ffprobe_output["packets"])  # type: ignore
