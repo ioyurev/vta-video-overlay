@@ -72,7 +72,7 @@ class CVProcessor:
         print(f"* Разрешение видео: {size}")
         print(f"* FPS: {fps}")
         self.video_output = cv2.VideoWriter(
-            filename=self.path_output,
+            filename=str(self.path_output),
             fourcc=cv2.VideoWriter_fourcc(*"avc1"),
             fps=fps,
             frameSize=size,
