@@ -1,8 +1,8 @@
+from vta_video_overlay.TdaFile import Data
+from vta_video_overlay.Worker import Worker
 from ui.MainWindow import Ui_MainWindow
 from PySide6 import QtWidgets
-from vta_video_overlay.TdaFile import Data
 from pathlib import Path
-from Overlay import overlay
 
 
 def pick_path_save():
@@ -25,13 +25,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def pick_tda(self):
         path = pick_path_open(filter="Файл VPTAnalizer(*.tda)")
-        self.label_tda.setText(path)
+        self.edit_tda.setText(path)
         self.data = Data(path=Path(path), temp_enabled=self.cb_temp.isChecked())
         self.data_to_gui()
 
     def pick_video(self):
         path = pick_path_open(filter="Видео(*.asf *.mp4);;Все файлы(*.*)")
-        self.label_video.setText(path)
+        self.edit_video.setText(path)
 
     def data_to_gui(self):
         self.edit_operator.setText(self.data.operator)
@@ -52,16 +52,25 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.data.coeff = coeff
         self.data.recalc_temp()
 
+    def finished(self):
+        self.raise_()
+        QtWidgets.QMessageBox.information(self, "vta-video-overlay", "Готово!")
+        self.setEnabled(True)
+        self.progressbar.setValue(0)
+
+    def update_progressbar(self, val: int):
+        self.progressbar.setValue(val)
+
     def overlay(self):
         savepath = Path(pick_path_save())
-        # if not savepath.is_file():
-        #     QtWidgets.QMessageBox.warning(self, 'Предупреждение', "Не выбран путь для сохранения")
-        #     return
         self.gui_to_data()
-        overlay(
-            video_file_path_input=Path(self.label_video.text()),
+        w = Worker(
+            parent=self,
+            video_file_path_input=Path(self.edit_video.text()),
             video_file_path_output=savepath,
-            progress_bar1=self.pb_step,
-            progress_bar2=self.pb_steps,
             data=self.data,
         )
+        w.progress.connect(self.update_progressbar)
+        w.finished.connect(self.finished)
+        self.setEnabled(False)
+        w.start()

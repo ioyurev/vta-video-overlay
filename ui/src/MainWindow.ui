@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>373</width>
-    <height>419</height>
+    <height>425</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -28,24 +28,10 @@
       </property>
      </widget>
     </item>
-    <item row="0" column="1">
-     <widget class="QLabel" name="label_tda">
-      <property name="text">
-       <string/>
-      </property>
-     </widget>
-    </item>
     <item row="1" column="0">
      <widget class="QPushButton" name="btn_video">
       <property name="text">
        <string>Выбрать файл видео</string>
-      </property>
-     </widget>
-    </item>
-    <item row="1" column="1">
-     <widget class="QLabel" name="label_video">
-      <property name="text">
-       <string/>
       </property>
      </widget>
     </item>
@@ -79,13 +65,6 @@
     <item row="4" column="1">
      <widget class="QLineEdit" name="edit_sample"/>
     </item>
-    <item row="11" column="0" colspan="2">
-     <widget class="QPushButton" name="btn_convert">
-      <property name="text">
-       <string>Наложить данные</string>
-      </property>
-     </widget>
-    </item>
     <item row="5" column="0" colspan="2">
      <widget class="QCheckBox" name="cb_temp">
       <property name="text">
@@ -103,6 +82,9 @@
       </property>
      </widget>
     </item>
+    <item row="6" column="1">
+     <widget class="QLineEdit" name="edit_a0"/>
+    </item>
     <item row="7" column="0">
      <widget class="QLabel" name="label_4">
       <property name="text">
@@ -110,12 +92,8 @@
       </property>
      </widget>
     </item>
-    <item row="9" column="0">
-     <widget class="QLabel" name="label_5">
-      <property name="text">
-       <string>a3 =</string>
-      </property>
-     </widget>
+    <item row="7" column="1">
+     <widget class="QLineEdit" name="edit_a1"/>
     </item>
     <item row="8" column="0">
      <widget class="QLabel" name="label_6">
@@ -124,27 +102,35 @@
       </property>
      </widget>
     </item>
-    <item row="6" column="1">
-     <widget class="QLineEdit" name="edit_a0"/>
-    </item>
-    <item row="7" column="1">
-     <widget class="QLineEdit" name="edit_a1"/>
-    </item>
     <item row="8" column="1">
      <widget class="QLineEdit" name="edit_a2"/>
+    </item>
+    <item row="9" column="0">
+     <widget class="QLabel" name="label_5">
+      <property name="text">
+       <string>a3 =</string>
+      </property>
+     </widget>
     </item>
     <item row="9" column="1">
      <widget class="QLineEdit" name="edit_a3"/>
     </item>
+    <item row="11" column="0" colspan="2">
+     <widget class="QPushButton" name="btn_convert">
+      <property name="text">
+       <string>Наложить данные</string>
+      </property>
+     </widget>
+    </item>
     <item row="12" column="0">
      <widget class="QLabel" name="label_7">
       <property name="text">
-       <string>Прогресс этапа</string>
+       <string>Прогресс</string>
       </property>
      </widget>
     </item>
     <item row="12" column="1">
-     <widget class="QProgressBar" name="pb_step">
+     <widget class="QProgressBar" name="progressbar">
       <property name="value">
        <number>0</number>
       </property>
@@ -153,23 +139,17 @@
       </property>
      </widget>
     </item>
-    <item row="13" column="1">
-     <widget class="QProgressBar" name="pb_steps">
-      <property name="maximum">
-       <number>3</number>
-      </property>
-      <property name="value">
-       <number>0</number>
-      </property>
-      <property name="format">
-       <string>%p%</string>
+    <item row="0" column="1">
+     <widget class="QLineEdit" name="edit_tda">
+      <property name="readOnly">
+       <bool>true</bool>
       </property>
      </widget>
     </item>
-    <item row="13" column="0">
-     <widget class="QLabel" name="label_8">
-      <property name="text">
-       <string>Общий прогресс</string>
+    <item row="1" column="1">
+     <widget class="QLineEdit" name="edit_video">
+      <property name="readOnly">
+       <bool>true</bool>
       </property>
      </widget>
     </item>
