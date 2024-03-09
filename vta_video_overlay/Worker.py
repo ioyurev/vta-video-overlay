@@ -32,7 +32,7 @@ class Worker(QtCore.QThread):
                 path_input=self.video_file_path_input,
                 path_output=Path(tmpfile1),
                 signal=self.progress,
-                current_progress=0,
+                current_progress=1,
             )
             self.step_done.emit(progress)
             video_data = VideoData(video_path=tmpfile1, data=self.data)
