@@ -1,9 +1,14 @@
-from typing import List
+from ffmpeg_progress_yield import FfmpegProgress
 from decimal import Decimal
+from PySide6 import QtCore
+from pathlib import Path
+from typing import List
+import subprocess
 import shutil
 import json
-import subprocess
-import pathlib
+
+
+FFMPEG_BIN_PATH = "ffmpeg"
 
 
 def get_pts(packets) -> List[int]:
@@ -16,7 +21,7 @@ def get_pts(packets) -> List[int]:
     return pts
 
 
-def get_timestamps(video_path: pathlib.Path, index: int = 0) -> List[int]:
+def get_timestamps(video_path: Path, index: int = 0) -> List[int]:
     # source: https://stackoverflow.com/a/73998721/11709825
     """
     Link: https://ffmpeg.org/ffprobe.html
@@ -59,3 +64,19 @@ def get_timestamps(video_path: pathlib.Path, index: int = 0) -> List[int]:
         )
 
     return get_pts(ffprobe_output["packets"])  # type: ignore
+
+
+def convert_video(
+    path_input: Path, path_output: Path, signal: QtCore.Signal, current_progress: int
+):
+    cmd = [FFMPEG_BIN_PATH, "-i", str(path_input), str(path_output)]
+    ff = FfmpegProgress(cmd)
+    print(f"* Конвертирование файла: {path_input}")
+    print(f"* Сохранение по пути: {path_output}")
+    for ff_progress in ff.run_command_with_progress():
+        val = int(round(ff_progress))
+        progress = current_progress + val // 3
+        signal.emit(progress)
+        print(f"* Прогресс ffmpeg: {val}/100")
+    print("* Работа ffmpeg завершена")
+    return progress

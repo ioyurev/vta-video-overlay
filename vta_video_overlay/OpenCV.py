@@ -1,12 +1,7 @@
-from vta_video_overlay.TdaFile import Data
-from vta_video_overlay.VIdeoData import VideoData
+from vta_video_overlay.VideoData import VideoData
 import cv2
-import tempfile
 from pathlib import Path
-from ffmpeg_progress_yield import FfmpegProgress
-from PySide6 import QtWidgets
-
-FFMPEG_BIN_PATH = "ffmpeg"
+from PySide6 import QtCore
 
 
 class CVProcessor:
@@ -14,19 +9,16 @@ class CVProcessor:
         self,
         video_data: VideoData,
         path_output: Path,
-        progress_bar: QtWidgets.QProgressBar,
+        signal: QtCore.Signal,
     ):
         self.video_data = video_data
         self.path_output = path_output
         self.path_input = video_data.path
         self.temp_enabled = video_data.temp_enabled
-        self.progress_bar = progress_bar
+        self.signal = signal
         self.maxindex = len(self.video_data.timestamps) - 1
-        # self.progress_bar.setFormat(f'%p/{cv.maxindex}')
-        self.progress_bar.setMaximum(self.maxindex)
-        self.progress_bar.setValue(0)
 
-    def loop(self):
+    def loop(self, current_progress: int):
         ret = True
         while ret:
             ret, frame = self.video_input.read()
@@ -49,7 +41,8 @@ class CVProcessor:
                 y = y0 + i * dy
                 cv_draw_text(frame, line, (x0, y))
             self.video_output.write(frame)
-            self.progress_bar.setValue(frame_index)
+            progress = current_progress + (100 * frame_index / self.maxindex) // 3
+            self.signal.emit(progress)
             ### window
             cv2.namedWindow("video", cv2.WINDOW_NORMAL)
             try:
@@ -61,9 +54,9 @@ class CVProcessor:
                 print("* got exception, breaking cycle")
                 print(f"\n{str(err)}")
                 break
-        cv2.destroyAllWindows()
+        return progress
 
-    def run(self):
+    def run(self, current_progress: int):
         self.video_input = cv2.VideoCapture(str(self.path_input))
         frame_width = int(self.video_input.get(3))
         frame_height = int(self.video_input.get(4))
@@ -77,14 +70,12 @@ class CVProcessor:
             fps=fps,
             frameSize=size,
         )
-        # cv_loop(video_input=video_input, video_output=video_output, video_data=self.video_data)
-        self.loop()
-        # print('* opencv overlay drawing done')
-        # print('* releasing video')
+        progress = self.loop(current_progress)
         self.video_input.release()
         self.video_output.release()
+        cv2.destroyAllWindows()
         print("* Работа OpenCV завершена")
-        # cv2.destroyAllWindows()
+        return progress
 
 
 def cv_draw_text(img: cv2.typing.MatLike, text: str, pos: tuple[int, int]):
@@ -110,57 +101,3 @@ def cv_draw_text(img: cv2.typing.MatLike, text: str, pos: tuple[int, int]):
         thickness=2,
         lineType=cv2.LINE_4,
     )
-
-
-def convert_video(
-    path_input: Path, path_output: Path, progress_bar: QtWidgets.QProgressBar
-):
-    # progress_bar.setFormat(f'%p/100')
-    progress_bar.setMaximum(100)
-    cmd = [FFMPEG_BIN_PATH, "-i", str(path_input), str(path_output)]
-    ff = FfmpegProgress(cmd)
-    print(f"* Конвертирование файла: {path_input}")
-    print(f"* Сохранение по пути: {path_output}")
-    for progress in ff.run_command_with_progress():
-        val = int(round(progress))
-        progress_bar.setValue(val)
-        print(f"* Прогресс ffmpeg: {val}/100")
-    print("* Работа ffmpeg завершена")
-
-
-def overlay(
-    video_file_path_input: Path,
-    video_file_path_output: Path,
-    progress_bar1: QtWidgets.QProgressBar,
-    progress_bar2: QtWidgets.QProgressBar,
-    data: Data,
-):
-    with tempfile.TemporaryDirectory() as tempdir:
-        tmpfile1 = Path(tempdir + "/out1.mp4")
-        tmpfile2 = Path(tempdir + "/out2.mp4")
-        convert_video(
-            path_input=video_file_path_input,
-            path_output=Path(tmpfile1),
-            progress_bar=progress_bar1,
-        )
-        progress_bar2.setValue(1)
-        video_data = VideoData(video_path=tmpfile1, data=data)
-        cv = CVProcessor(
-            video_data=video_data, path_output=tmpfile2, progress_bar=progress_bar1
-        )
-        cv.run()
-        progress_bar2.setValue(2)
-        convert_video(
-            path_input=tmpfile2,
-            path_output=video_file_path_output,
-            progress_bar=progress_bar1,
-        )
-        progress_bar2.setValue(3)
-        QtWidgets.QMessageBox.information(None, "Отчет", "Готово!")
-        # timestamps, emf_data, temp_data = fit_data(video_path=tmpfile1, data=data)
-
-
-# if __name__ == '__main__':
-#     tda = 'example/2024.03.06-2 Tm2S3-MnS 60-40.Tda'
-#     video = 'example/converted.mp4'
-#     fit_data(video_path=Path(video), data=Data(path=Path(tda)))
