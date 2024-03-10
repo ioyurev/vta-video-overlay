@@ -52,11 +52,11 @@ class CVProcessor:
             try:
                 cv2.imshow("video", frame)
                 if cv2.waitKey(1) & 0xFF == ord("q"):
-                    print("* manual break cycle")
+                    print("* Работа OpenCV завершена вручную")
                     break
             except Exception as err:
-                print("* got exception, breaking cycle")
-                print(f"\n{str(err)}")
+                print("* Ошибка работы OpenCV")
+                print(err)
                 break
         return progress
 
