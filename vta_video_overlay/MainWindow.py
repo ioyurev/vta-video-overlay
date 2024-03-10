@@ -1,5 +1,6 @@
 from vta_video_overlay.TdaFile import Data
 from vta_video_overlay.Worker import Worker
+from vta_video_overlay.__version__ import __version__
 from ui.MainWindow import Ui_MainWindow
 from PySide6 import QtWidgets
 from pathlib import Path
@@ -22,6 +23,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.btn_tda.clicked.connect(self.pick_tda)
         self.btn_video.clicked.connect(self.pick_video)
         self.btn_convert.clicked.connect(self.overlay)
+        self.statusbar.addWidget(QtWidgets.QLabel(__version__))
 
     def pick_tda(self):
         path = pick_path_open(filter="Файл VPTAnalizer(*.tda)")
@@ -54,7 +56,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def finished(self):
         self.raise_()
-        QtWidgets.QMessageBox.information(self, "vta-video-overlay", "Готово!")
+        QtWidgets.QMessageBox.information(self, "vta-video-overlay", "Работа завершена")
         self.setEnabled(True)
         self.progressbar.setValue(0)
 
