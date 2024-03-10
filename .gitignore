@@ -1,5 +1,6 @@
 example
 ui/*.py
 __pycache__
+pyinstaller
 logs
 .venv
