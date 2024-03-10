@@ -9,10 +9,16 @@ def fit_data(video_path: Path, data: Data):
     timestamps = np.array(get_timestamps(video_path)) / 1000
     print(f"* Количество кадров видео: {len(timestamps)}")
     f_emf = interp1d(
-        data.data_time, data.data_emf, bounds_error=False, fill_value="extrapolate"
+        data.data_time.tolist(),
+        data.data_emf.tolist(),
+        bounds_error=False,
+        fill_value="extrapolate",
     )
     f_temp = interp1d(
-        data.data_time, data.data_temp, bounds_error=False, fill_value="extrapolate"
+        data.data_time.tolist(),
+        data.data_temp.tolist(),
+        bounds_error=False,
+        fill_value="extrapolate",
     )
     emf_aligned = f_emf(timestamps)
     temp_aligned = f_temp(timestamps)

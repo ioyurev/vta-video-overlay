@@ -51,8 +51,8 @@ class Data:
         df[Headers.TIME] = df[Headers.TIME_RAW] * 86400
         for index, item in enumerate(self.coeff):
             self.coeff[index] = item.replace(",", ".")
-        self.data_time = df[Headers.TIME].to_list()
-        self.data_emf = df[Headers.EMF].to_list()
+        self.data_time = df[Headers.TIME].to_numpy()
+        self.data_emf = df[Headers.EMF].to_numpy()
         self.temp_enabled = temp_enabled
         self.recalc_temp()
 
@@ -60,4 +60,4 @@ class Data:
         if self.temp_enabled:
             np_coeff = np.array(self.coeff, dtype=float)
             xn = np.poly1d(np_coeff)
-            self.data_temp = xn(self.data_emf).tolist()
+            self.data_temp = xn(self.data_emf)
