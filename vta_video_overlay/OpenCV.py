@@ -3,6 +3,7 @@ import cv2
 from pathlib import Path
 from PySide6 import QtCore
 
+CODEC = "mp4v"
 
 class CVProcessor:
     def __init__(
@@ -66,7 +67,7 @@ class CVProcessor:
         print(f"* FPS: {fps}")
         self.video_output = cv2.VideoWriter(
             filename=str(self.path_output),
-            fourcc=cv2.VideoWriter_fourcc(*"avc1"),
+            fourcc=cv2.VideoWriter_fourcc(*CODEC),
             fps=fps,
             frameSize=size,
         )
