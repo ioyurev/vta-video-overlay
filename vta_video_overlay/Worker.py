@@ -3,8 +3,15 @@ from vta_video_overlay.OpenCV import CVProcessor
 from vta_video_overlay.FFmpeg import convert_video
 from vta_video_overlay.VideoData import VideoData
 from pathlib import Path
-from PySide6 import QtCore
+from PySide6 import QtCore, QtWidgets
 import tempfile
+import shutil
+import os
+
+
+def clean(tempdir: str):
+    if os.path.exists(tempdir):
+        shutil.rmtree(tempdir)
 
 
 class Worker(QtCore.QThread):
@@ -54,4 +61,6 @@ class Worker(QtCore.QThread):
             except Exception as e:
                 print("* Ошибка обработки видео")
                 print(e)
-                QtWidgets.QMessageBox.critical(self, 'Ошибка', str(e))
+                QtWidgets.QMessageBox.critical(self, "Ошибка", str(e))
+            finally:
+                clean(tempdir=tempdir)
