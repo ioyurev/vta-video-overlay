@@ -24,26 +24,34 @@ class Worker(QtCore.QThread):
         self.video_file_path_output = video_file_path_output
         self.data = data
 
+    def do_work(self, tmpfile1: Path, tmpfile2: Path):
+        progress = convert_video(
+            path_input=self.video_file_path_input,
+            path_output=tmpfile1,
+            signal=self.progress,
+            current_progress=1,
+        )
+        self.step_done.emit(progress)
+        video_data = VideoData(video_path=tmpfile1, data=self.data)
+        cv = CVProcessor(
+            video_data=video_data, path_output=tmpfile2, signal=self.progress
+        )
+        progress = cv.run(current_progress=progress)
+        self.step_done.emit(progress)
+        convert_video(
+            path_input=tmpfile2,
+            path_output=self.video_file_path_output,
+            signal=self.progress,
+            current_progress=progress,
+        )
+
     def run(self):
         with tempfile.TemporaryDirectory() as tempdir:
             tmpfile1 = Path(tempdir + "/out1.mp4")
             tmpfile2 = Path(tempdir + "/out2.mp4")
-            progress = convert_video(
-                path_input=self.video_file_path_input,
-                path_output=Path(tmpfile1),
-                signal=self.progress,
-                current_progress=1,
-            )
-            self.step_done.emit(progress)
-            video_data = VideoData(video_path=tmpfile1, data=self.data)
-            cv = CVProcessor(
-                video_data=video_data, path_output=tmpfile2, signal=self.progress
-            )
-            progress = cv.run(current_progress=progress)
-            self.step_done.emit(progress)
-            convert_video(
-                path_input=tmpfile2,
-                path_output=self.video_file_path_output,
-                signal=self.progress,
-                current_progress=progress,
-            )
+            try:
+                self.do_work(tmpfile1=tmpfile1, tmpfile2=tmpfile2)
+            except Exception as e:
+                print("* Ошибка обработки видео")
+                print(e)
+                QtWidgets.QMessageBox.critical(self, 'Ошибка', str(e))
