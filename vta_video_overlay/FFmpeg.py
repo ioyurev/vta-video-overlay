@@ -7,9 +7,6 @@ import subprocess
 import json
 
 
-FFMPEG_BIN_PATH = "ffmpeg"
-
-
 def get_pts(packets) -> List[int]:
     pts: List[int] = []
 
@@ -64,7 +61,7 @@ def get_timestamps(video_path: Path, index: int = 0) -> List[int]:
 def convert_video(
     path_input: Path, path_output: Path, signal: QtCore.Signal, current_progress: int
 ):
-    cmd = [FFMPEG_BIN_PATH, "-i", str(path_input), str(path_output)]
+    cmd = ["ffmpeg", "-i", str(path_input), str(path_output)]
     ff = FfmpegProgress(cmd)
     print(f"* Конвертирование файла: {path_input}")
     print(f"* Сохранение по пути: {path_output}")
