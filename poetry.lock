@@ -207,16 +207,6 @@ files = [
 ]
 
 [[package]]
-name = "ffmpeg"
-version = "1.4"
-description = "ffmpeg python package url [https://github.com/jiashaokun/ffmpeg]"
-optional = false
-python-versions = "*"
-files = [
-    {file = "ffmpeg-1.4.tar.gz", hash = "sha256:6931692c890ff21d39938433c2189747815dca0c60ddc7f9bb97f199dba0b5b9"},
-]
-
-[[package]]
 name = "ffmpeg-progress-yield"
 version = "0.7.8"
 description = "Run an ffmpeg command with progress"
@@ -992,4 +982,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.12,<3.13"
-content-hash = "05c5e8b22777fb466f7963e8aeaa8ea2d4fea608466ca5b16a079982aa3e45f3"
+content-hash = "d8cc69b7d11959e9da017f446985c027d440fa15a5f70a84fda7f58648e57ec9"
