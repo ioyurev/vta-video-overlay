@@ -4,7 +4,6 @@ from PySide6 import QtCore
 from pathlib import Path
 from typing import List
 import subprocess
-import shutil
 import json
 
 
@@ -36,10 +35,6 @@ def get_timestamps(video_path: Path, index: int = 0) -> List[int]:
         :param index:
         :param video_path:
     """
-
-    # Verify if ffprobe is installed
-    if shutil.which("ffprobe") is None:
-        raise Exception("ffprobe is not in the environment variable.")
 
     # Getting video absolute path and checking for its existance
     video_path = video_path.resolve()
