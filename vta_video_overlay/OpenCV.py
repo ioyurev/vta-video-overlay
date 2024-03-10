@@ -4,6 +4,9 @@ from pathlib import Path
 from PySide6 import QtCore
 
 CODEC = "mp4v"
+TEXT_COLOR = (0, 255, 255)
+BG_COLOR = (63, 63, 63)
+
 
 class CVProcessor:
     def __init__(
@@ -89,7 +92,7 @@ def cv_draw_text(img: cv2.typing.MatLike, text: str, pos: tuple[int, int]):
         img=img,
         pt1=(x, int(y - text_h * 1.5)),
         pt2=(x + text_w, int(y + text_h / 2)),
-        color=(63, 63, 63),
+        color=BG_COLOR,
         thickness=-1,
     )
     cv2.putText(
@@ -98,7 +101,7 @@ def cv_draw_text(img: cv2.typing.MatLike, text: str, pos: tuple[int, int]):
         org=pos,
         fontFace=cv2.FONT_HERSHEY_COMPLEX,
         fontScale=1,
-        color=(0, 255, 255),
+        color=TEXT_COLOR,
         thickness=2,
         lineType=cv2.LINE_4,
     )
