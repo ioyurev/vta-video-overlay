@@ -51,6 +51,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         coeff.append(self.edit_a2.text())
         coeff.append(self.edit_a1.text())
         coeff.append(self.edit_a0.text())
+        self.data.temp_enabled = self.cb_temp.isChecked()
         self.data.coeff = coeff
         self.data.recalc_temp()
 
