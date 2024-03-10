@@ -1,3 +1,4 @@
 example
 ui/*.py
 __pycache__
+logs

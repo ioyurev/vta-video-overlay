@@ -3,7 +3,7 @@ from vta_video_overlay.OpenCV import CVProcessor
 from vta_video_overlay.FFmpeg import convert_video
 from vta_video_overlay.VideoData import VideoData
 from pathlib import Path
-from PySide6 import QtCore, QtWidgets
+from PySide6 import QtCore
 import tempfile
 import shutil
 import os
@@ -17,7 +17,6 @@ def clean(tempdir: str):
 class Worker(QtCore.QThread):
     progress = QtCore.Signal(int)
     step_done = QtCore.Signal(int)
-    finished = QtCore.Signal()
 
     def __init__(
         self,
@@ -56,11 +55,5 @@ class Worker(QtCore.QThread):
         with tempfile.TemporaryDirectory() as tempdir:
             tmpfile1 = Path(tempdir + "/out1.mp4")
             tmpfile2 = Path(tempdir + "/out2.mp4")
-            try:
-                self.do_work(tmpfile1=tmpfile1, tmpfile2=tmpfile2)
-            except Exception as e:
-                print("* Ошибка обработки видео")
-                print(e)
-                QtWidgets.QMessageBox.critical(self, "Ошибка", str(e))
-            finally:
-                clean(tempdir=tempdir)
+            self.do_work(tmpfile1=tmpfile1, tmpfile2=tmpfile2)
+            clean(tempdir=tempdir)

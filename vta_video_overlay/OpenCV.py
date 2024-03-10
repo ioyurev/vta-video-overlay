@@ -2,6 +2,7 @@ from vta_video_overlay.VideoData import VideoData
 import cv2
 from pathlib import Path
 from PySide6 import QtCore
+from loguru import logger as log
 
 CODEC = "mp4v"
 TEXT_COLOR = (0, 255, 255)
@@ -52,22 +53,22 @@ class CVProcessor:
             try:
                 cv2.imshow("video", frame)
                 if cv2.waitKey(1) & 0xFF == ord("q"):
-                    print("* Работа OpenCV завершена вручную")
+                    log.info("Ручная остановка OpenCV")
                     break
             except Exception as err:
-                print("* Ошибка работы OpenCV")
-                print(err)
+                log.exception(err)
                 break
         return progress
 
+    @log.catch
     def run(self, current_progress: int):
         self.video_input = cv2.VideoCapture(str(self.path_input))
         frame_width = int(self.video_input.get(3))
         frame_height = int(self.video_input.get(4))
         size = (frame_width, frame_height)
         fps = self.video_input.get(cv2.CAP_PROP_FPS)
-        print(f"* Разрешение видео: {size}")
-        print(f"* FPS: {fps}")
+        log.info(f"Разрешение видео: {size}")
+        log.info(f"FPS: {fps}")
         self.video_output = cv2.VideoWriter(
             filename=str(self.path_output),
             fourcc=cv2.VideoWriter_fourcc(*CODEC),
@@ -78,7 +79,7 @@ class CVProcessor:
         self.video_input.release()
         self.video_output.release()
         cv2.destroyAllWindows()
-        print("* Работа OpenCV завершена")
+        log.info("Работа OpenCV завершена")
         return progress
 
 

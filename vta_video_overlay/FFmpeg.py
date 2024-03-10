@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import List
 import subprocess
 import json
+from loguru import logger as log
 
 
 def get_pts(packets) -> List[int]:
@@ -17,6 +18,7 @@ def get_pts(packets) -> List[int]:
     return pts
 
 
+@log.catch
 def get_timestamps(video_path: Path, index: int = 0) -> List[int]:
     # source: https://stackoverflow.com/a/73998721/11709825
     """
@@ -58,17 +60,18 @@ def get_timestamps(video_path: Path, index: int = 0) -> List[int]:
     return get_pts(ffprobe_output["packets"])  # type: ignore
 
 
+@log.catch
 def convert_video(
     path_input: Path, path_output: Path, signal: QtCore.Signal, current_progress: int
 ):
     cmd = ["ffmpeg", "-i", str(path_input), str(path_output)]
     ff = FfmpegProgress(cmd)
-    print(f"* Конвертирование файла: {path_input}")
-    print(f"* Сохранение по пути: {path_output}")
+    log.info(f"Конвертирование файла: {path_input}")
+    log.info(f"Сохранение по пути: {path_output}")
     for ff_progress in ff.run_command_with_progress():
         val = int(round(ff_progress))
         progress = current_progress + val // 3
         signal.emit(progress)
         print(f"* Прогресс ffmpeg: {val}/100")
-    print("* Работа ffmpeg завершена")
+    log.info("Работа ffmpeg завершена")
     return progress
