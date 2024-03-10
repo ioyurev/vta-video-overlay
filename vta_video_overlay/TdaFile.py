@@ -8,7 +8,7 @@ class Headers:
     EMF = "EMF, mV"
     TIME_RAW = "Time, s/86400"
     TIME = "Time, s"
-    TEMP = "Temperature, Celsius degree"
+    TEMP = "Temperature, °C"
 
 
 def parse_lines(lines: list[str]):
@@ -61,3 +61,11 @@ class Data:
             np_coeff = np.array(self.coeff, dtype=float)
             xn = np.poly1d(np_coeff)
             self.data_temp = xn(self.data_emf)
+
+    def to_excel(self, path: Path):
+        df = pd.DataFrame()
+        df[Headers.TIME] = self.data_time.round(3)
+        df[Headers.EMF] = self.data_emf.round(3)
+        if self.temp_enabled:
+            df[Headers.TEMP] = self.data_temp.round()
+        df.to_excel(excel_writer=path, index=False)

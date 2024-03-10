@@ -72,5 +72,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         )
         w.progress.connect(self.update_progressbar)
         w.finished.connect(self.finished)
+        if self.cb_excel.isChecked():
+            excelpath = Path(self.edit_tda.text()).with_suffix(".xlsx")
+            self.data.to_excel(excelpath)
         self.setEnabled(False)
         w.start()
