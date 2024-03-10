@@ -7,6 +7,7 @@ from loguru import logger as log
 CODEC = "mp4v"
 TEXT_COLOR = (0, 255, 255)
 BG_COLOR = (63, 63, 63)
+STOPKEY = ord("q")
 
 
 class CVProcessor:
@@ -14,19 +15,22 @@ class CVProcessor:
         self,
         video_data: VideoData,
         path_output: Path,
-        signal: QtCore.Signal,
+        progress_signal: QtCore.Signal,
     ):
         self.video_data = video_data
         self.path_output = path_output
         self.path_input = video_data.path
         self.temp_enabled = video_data.temp_enabled
-        self.signal = signal
+        self.progress_signal = progress_signal
         self.maxindex = len(self.video_data.timestamps) - 1
 
     def loop(self, current_progress: int):
+        cv2.namedWindow("video", cv2.WINDOW_GUI_NORMAL)
         ret = True
         while ret:
             ret, frame = self.video_input.read()
+            if not ret:
+                break
             frame_index = int(self.video_input.get(cv2.CAP_PROP_POS_FRAMES)) - 1
             print(f"* OpenCV обрабатыавет кадр {frame_index}/{self.maxindex}")
             lines = [
@@ -47,16 +51,10 @@ class CVProcessor:
                 cv_draw_text(frame, line, (x0, y))
             self.video_output.write(frame)
             progress = current_progress + (100 * frame_index / self.maxindex) // 3
-            self.signal.emit(progress)
-            ### window
-            cv2.namedWindow("video", cv2.WINDOW_NORMAL)
-            try:
-                cv2.imshow("video", frame)
-                if cv2.waitKey(1) & 0xFF == ord("q"):
-                    log.info("Ручная остановка OpenCV")
-                    break
-            except Exception as err:
-                log.exception(err)
+            self.progress_signal.emit(progress)
+            cv2.imshow("video", frame)
+            if cv2.waitKey(1) & 0xFF == STOPKEY:
+                log.info("Ручная остановка OpenCV")
                 break
         return progress
 

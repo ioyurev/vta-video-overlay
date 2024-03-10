@@ -40,7 +40,7 @@ class Worker(QtCore.QThread):
         self.step_done.emit(progress)
         video_data = VideoData(video_path=tmpfile1, data=self.data)
         cv = CVProcessor(
-            video_data=video_data, path_output=tmpfile2, signal=self.progress
+            video_data=video_data, path_output=tmpfile2, progress_signal=self.progress
         )
         progress = cv.run(current_progress=progress)
         self.step_done.emit(progress)
