@@ -23,7 +23,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.btn_tda.clicked.connect(self.pick_tda)
         self.btn_video.clicked.connect(self.pick_video)
         self.btn_convert.clicked.connect(self.overlay)
+        self.cb_trim.clicked.connect(self.switch_sb_trim)
         self.statusbar.addWidget(QtWidgets.QLabel(__version__))
+
+    def switch_sb_trim(self):
+        self.sb_trim.setEnabled(self.cb_trim.isChecked())
 
     def pick_tda(self):
         path = pick_path_open(filter="Файл VPTAnalizer(*.tda)")
@@ -42,6 +46,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.edit_a1.setText(str(self.data.coeff[2]))
         self.edit_a2.setText(str(self.data.coeff[1]))
         self.edit_a3.setText(str(self.data.coeff[0]))
+        self.sb_trim.setMaximum(self.data.data_time[-1] / 2)
 
     def gui_to_data(self):
         self.data.operator = self.edit_operator.text()
@@ -67,11 +72,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def overlay(self):
         savepath = Path(pick_path_save())
         self.gui_to_data()
+        if self.cb_trim.isChecked():
+            start_timestamp = self.sb_trim.value()
+        else:
+            start_timestamp = 0.0
         w = Worker(
             parent=self,
             video_file_path_input=Path(self.edit_video.text()),
             video_file_path_output=savepath,
             data=self.data,
+            start_timestamp=start_timestamp,
         )
         w.progress.connect(self.update_progressbar)
         w.finished.connect(self.finished)

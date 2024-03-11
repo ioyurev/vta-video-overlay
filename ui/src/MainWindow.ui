@@ -21,10 +21,66 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
+    <item row="0" column="0">
+     <widget class="QPushButton" name="btn_tda">
+      <property name="text">
+       <string>Выбрать файл tda</string>
+      </property>
+     </widget>
+    </item>
     <item row="7" column="0">
      <widget class="QLabel" name="label_4">
       <property name="text">
        <string>a1 =</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+      </property>
+     </widget>
+    </item>
+    <item row="3" column="1">
+     <widget class="QLineEdit" name="edit_operator"/>
+    </item>
+    <item row="12" column="0" colspan="2">
+     <widget class="QProgressBar" name="progressbar">
+      <property name="value">
+       <number>0</number>
+      </property>
+      <property name="textVisible">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
+    <item row="4" column="0">
+     <widget class="QLabel" name="label_2">
+      <property name="text">
+       <string>Образец:</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+      </property>
+     </widget>
+    </item>
+    <item row="9" column="1">
+     <widget class="QLineEdit" name="edit_a3"/>
+    </item>
+    <item row="1" column="1">
+     <widget class="QLineEdit" name="edit_video">
+      <property name="readOnly">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
+    <item row="4" column="1">
+     <widget class="QLineEdit" name="edit_sample"/>
+    </item>
+    <item row="8" column="1">
+     <widget class="QLineEdit" name="edit_a2"/>
+    </item>
+    <item row="3" column="0">
+     <widget class="QLabel" name="label">
+      <property name="text">
+       <string>Оператор:</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -41,43 +97,10 @@
       </property>
      </widget>
     </item>
-    <item row="4" column="1">
-     <widget class="QLineEdit" name="edit_sample"/>
-    </item>
-    <item row="10" column="0" colspan="2">
-     <widget class="QPushButton" name="btn_convert">
-      <property name="text">
-       <string>Наложить данные</string>
-      </property>
-     </widget>
-    </item>
-    <item row="6" column="1">
-     <widget class="QLineEdit" name="edit_a0"/>
-    </item>
     <item row="1" column="0">
      <widget class="QPushButton" name="btn_video">
       <property name="text">
        <string>Выбрать файл видео</string>
-      </property>
-     </widget>
-    </item>
-    <item row="4" column="0">
-     <widget class="QLabel" name="label_2">
-      <property name="text">
-       <string>Образец:</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-      </property>
-     </widget>
-    </item>
-    <item row="3" column="1">
-     <widget class="QLineEdit" name="edit_operator"/>
-    </item>
-    <item row="0" column="1">
-     <widget class="QLineEdit" name="edit_tda">
-      <property name="readOnly">
-       <bool>true</bool>
       </property>
      </widget>
     </item>
@@ -91,19 +114,43 @@
       </property>
      </widget>
     </item>
+    <item row="11" column="0" colspan="2">
+     <widget class="QPushButton" name="btn_convert">
+      <property name="text">
+       <string>Наложить данные</string>
+      </property>
+     </widget>
+    </item>
+    <item row="6" column="1">
+     <widget class="QLineEdit" name="edit_a0"/>
+    </item>
+    <item row="5" column="0" colspan="2">
+     <widget class="QCheckBox" name="cb_temp">
+      <property name="text">
+       <string>Температурная калибровка y = a3*x^3 + a2*x^2 + a1*x + a0</string>
+      </property>
+      <property name="checked">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
     <item row="7" column="1">
      <widget class="QLineEdit" name="edit_a1"/>
     </item>
-    <item row="8" column="1">
-     <widget class="QLineEdit" name="edit_a2"/>
-    </item>
-    <item row="3" column="0">
-     <widget class="QLabel" name="label">
+    <item row="6" column="0">
+     <widget class="QLabel" name="label_3">
       <property name="text">
-       <string>Оператор:</string>
+       <string>a0 =</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="1">
+     <widget class="QLineEdit" name="edit_tda">
+      <property name="readOnly">
+       <bool>true</bool>
       </property>
      </widget>
     </item>
@@ -117,52 +164,37 @@
       </property>
      </widget>
     </item>
-    <item row="5" column="0" colspan="2">
-     <widget class="QCheckBox" name="cb_temp">
+    <item row="10" column="0">
+     <widget class="QCheckBox" name="cb_trim">
       <property name="text">
-       <string>Температурная калибровка y = a3*x^3 + a2*x^2 + a1*x + a0</string>
+       <string>Обрезать от (с):</string>
       </property>
       <property name="checked">
        <bool>true</bool>
       </property>
      </widget>
     </item>
-    <item row="0" column="0">
-     <widget class="QPushButton" name="btn_tda">
-      <property name="text">
-       <string>Выбрать файл tda</string>
-      </property>
-     </widget>
-    </item>
-    <item row="1" column="1">
-     <widget class="QLineEdit" name="edit_video">
-      <property name="readOnly">
+    <item row="10" column="1">
+     <widget class="QDoubleSpinBox" name="sb_trim">
+      <property name="enabled">
        <bool>true</bool>
       </property>
-     </widget>
-    </item>
-    <item row="11" column="0" colspan="2">
-     <widget class="QProgressBar" name="progressbar">
+      <property name="layoutDirection">
+       <enum>Qt::LeftToRight</enum>
+      </property>
+      <property name="decimals">
+       <number>1</number>
+      </property>
+      <property name="maximum">
+       <double>300.000000000000000</double>
+      </property>
+      <property name="singleStep">
+       <double>0.000000000000000</double>
+      </property>
       <property name="value">
-       <number>0</number>
-      </property>
-      <property name="textVisible">
-       <bool>true</bool>
+       <double>250.000000000000000</double>
       </property>
      </widget>
-    </item>
-    <item row="6" column="0">
-     <widget class="QLabel" name="label_3">
-      <property name="text">
-       <string>a0 =</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-      </property>
-     </widget>
-    </item>
-    <item row="9" column="1">
-     <widget class="QLineEdit" name="edit_a3"/>
     </item>
    </layout>
   </widget>

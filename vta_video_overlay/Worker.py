@@ -24,11 +24,13 @@ class Worker(QtCore.QThread):
         video_file_path_input: Path,
         video_file_path_output: Path,
         data: Data,
+        start_timestamp: float,
     ):
         super().__init__(parent=parent)
         self.video_file_path_input = video_file_path_input
         self.video_file_path_output = video_file_path_output
         self.data = data
+        self.start_timestamp = start_timestamp
 
     def do_work(self, tmpfile1: Path, tmpfile2: Path):
         progress = convert_video(
@@ -42,7 +44,9 @@ class Worker(QtCore.QThread):
         cv = CVProcessor(
             video_data=video_data, path_output=tmpfile2, progress_signal=self.progress
         )
-        progress = cv.run(current_progress=progress)
+        progress = cv.run(
+            current_progress=progress, start_timestamp=self.start_timestamp
+        )
         self.step_done.emit(progress)
         convert_video(
             path_input=tmpfile2,

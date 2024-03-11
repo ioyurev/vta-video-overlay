@@ -24,19 +24,25 @@ class CVProcessor:
         self.progress_signal = progress_signal
         self.maxindex = len(self.video_data.timestamps) - 1
 
-    def loop(self, current_progress: int):
+    def loop(self, current_progress: int, start_timestamp: float):
         cv2.namedWindow("video", cv2.WINDOW_GUI_NORMAL)
         ret = True
+        self.video_input.set(cv2.CAP_PROP_POS_MSEC, start_timestamp * 1000)
         while ret:
             ret, frame = self.video_input.read()
             if not ret:
                 break
             frame_index = int(self.video_input.get(cv2.CAP_PROP_POS_FRAMES)) - 1
-            print(f"* OpenCV обрабатыавет кадр {frame_index}/{self.maxindex}")
+            if frame_index < 0:
+                continue
+            timestamp = self.video_data.timestamps[frame_index]
+            if timestamp < start_timestamp:
+                continue
+            print(f"* OpenCV обрабатывает кадр {frame_index}/{self.maxindex}")
             lines = [
                 f"Оператор: {self.video_data.operator}",
                 f"Образец: {self.video_data.sample}",
-                f"Время (с): {round(self.video_data.timestamps[frame_index], 3)}",
+                f"Время (с): {round(timestamp, 3)}",
                 f"ЭДС (мВ): {round(self.video_data.emf_aligned[frame_index], 3)}",
             ]
             if self.temp_enabled:
@@ -59,7 +65,7 @@ class CVProcessor:
         return progress
 
     @log.catch
-    def run(self, current_progress: int):
+    def run(self, current_progress: int, start_timestamp: float):
         self.video_input = cv2.VideoCapture(str(self.path_input))
         frame_width = int(self.video_input.get(3))
         frame_height = int(self.video_input.get(4))
@@ -73,7 +79,9 @@ class CVProcessor:
             fps=fps,
             frameSize=size,
         )
-        progress = self.loop(current_progress)
+        progress = self.loop(
+            current_progress=current_progress, start_timestamp=start_timestamp
+        )
         self.video_input.release()
         self.video_output.release()
         cv2.destroyAllWindows()
