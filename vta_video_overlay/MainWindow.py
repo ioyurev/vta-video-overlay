@@ -2,6 +2,7 @@ from vta_video_overlay.TdaFile import Data
 from vta_video_overlay.Worker import Worker
 from vta_video_overlay.__version__ import __version__
 from ui.MainWindow import Ui_MainWindow
+from loguru import logger as log
 from PySide6 import QtWidgets
 from pathlib import Path
 
@@ -76,6 +77,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             start_timestamp = self.sb_trim.value()
         else:
             start_timestamp = 0.0
+        log.info(f"Оператор: {self.data.operator}")
+        log.info(f"Образец: {self.data.sample}")
+        log.info(f"Включен расчет температуры: {self.data.temp_enabled}")
+        log.info(f"Коэффициенты: {self.data.coeff}")
+        log.info(f"Начало отсечки: {start_timestamp}")
         w = Worker(
             parent=self,
             video_file_path_input=Path(self.edit_video.text()),
