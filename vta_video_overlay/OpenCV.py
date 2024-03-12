@@ -24,10 +24,24 @@ class CVProcessor:
         self.progress_signal = progress_signal
         self.maxindex = len(self.video_data.timestamps) - 1
 
+    def make_text_template(self):
+        template = (
+            f"Оператор: {self.video_data.operator}\n"
+            f"Образец: {self.video_data.sample}\n"
+            f"Время (с): {{time:.3f}}\n"
+            f"ЭДС (мВ): {{emf:.3f}}"
+        )
+        if self.temp_enabled:
+            template += "\nТемпература (C): {temp:.0f}"
+        return template
+
     def loop(self, current_progress: int, start_timestamp: float):
         cv2.namedWindow("video", cv2.WINDOW_GUI_NORMAL)
-        ret = True
         self.video_input.set(cv2.CAP_PROP_POS_MSEC, start_timestamp * 1000)
+        first_frame_index = int(self.video_input.get(cv2.CAP_PROP_POS_FRAMES))
+        log.info(f"Отсечка по времени: {start_timestamp}\n, кадр: {first_frame_index}")
+        text_template = self.make_text_template()
+        ret = True
         while ret:
             ret, frame = self.video_input.read()
             if not ret:
@@ -39,22 +53,17 @@ class CVProcessor:
             if timestamp < start_timestamp:
                 continue
             print(f"* OpenCV обрабатывает кадр {frame_index}/{self.maxindex}")
-            lines = [
-                f"Оператор: {self.video_data.operator}",
-                f"Образец: {self.video_data.sample}",
-                f"Время (с): {round(timestamp, 3)}",
-                f"ЭДС (мВ): {round(self.video_data.emf_aligned[frame_index], 3)}",
-            ]
             if self.temp_enabled:
-                lines.append(
-                    f"Температура (C): {round(self.video_data.temp_aligned[frame_index])}"
+                text = text_template.format(
+                    time=timestamp,
+                    emf=self.video_data.emf_aligned[frame_index],
+                    temp=self.video_data.temp_aligned[frame_index],
                 )
-            x0 = 50
-            y0, dy = 50, 50
-
-            for i, line in enumerate(lines):
-                y = y0 + i * dy
-                cv_draw_text(frame, line, (x0, y))
+            else:
+                text = text_template.format(
+                    time=timestamp, emf=self.video_data.emf_aligned[frame_index]
+                )
+            cv_draw_text(img=frame, text=text, pos=(50, 50))
             self.video_output.write(frame)
             progress = current_progress + (100 * frame_index / self.maxindex) // 3
             self.progress_signal.emit(progress)
@@ -90,25 +99,28 @@ class CVProcessor:
 
 
 def cv_draw_text(img: cv2.typing.MatLike, text: str, pos: tuple[int, int]):
+    lines = text.splitlines()
     x, y = pos
-    text_size, _ = cv2.getTextSize(
-        text=text, fontFace=cv2.FONT_HERSHEY_COMPLEX, fontScale=1, thickness=2
-    )
-    text_w, text_h = text_size
-    cv2.rectangle(
-        img=img,
-        pt1=(x, int(y - text_h * 1.5)),
-        pt2=(x + text_w, int(y + text_h / 2)),
-        color=BG_COLOR,
-        thickness=-1,
-    )
-    cv2.putText(
-        img=img,
-        text=text,
-        org=pos,
-        fontFace=cv2.FONT_HERSHEY_COMPLEX,
-        fontScale=1,
-        color=TEXT_COLOR,
-        thickness=2,
-        lineType=cv2.LINE_4,
-    )
+    for line in lines:
+        text_size, _ = cv2.getTextSize(
+            text=line, fontFace=cv2.FONT_HERSHEY_COMPLEX, fontScale=1, thickness=2
+        )
+        text_w, text_h = text_size
+        cv2.rectangle(
+            img=img,
+            pt1=(x, int(y - text_h * 1.5)),
+            pt2=(x + text_w, int(y + text_h / 2)),
+            color=BG_COLOR,
+            thickness=-1,
+        )
+        cv2.putText(
+            img=img,
+            text=line,
+            org=(x, y),
+            fontFace=cv2.FONT_HERSHEY_COMPLEX,
+            fontScale=1,
+            color=TEXT_COLOR,
+            thickness=2,
+            lineType=cv2.LINE_4,
+        )
+        y += 50
