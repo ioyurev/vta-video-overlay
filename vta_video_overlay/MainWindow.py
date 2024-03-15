@@ -1,9 +1,10 @@
 from vta_video_overlay.TdaFile import Data
 from vta_video_overlay.Worker import Worker
 from vta_video_overlay.__version__ import __version__
+from vta_video_overlay.AboutWindow import AboutWindow
 from ui.MainWindow import Ui_MainWindow
 from loguru import logger as log
-from PySide6 import QtWidgets
+from PySide6 import QtWidgets, QtGui
 from pathlib import Path
 
 
@@ -26,6 +27,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.btn_convert.clicked.connect(self.overlay)
         self.cb_trim.clicked.connect(self.switch_sb_trim)
         self.statusbar.addWidget(QtWidgets.QLabel(__version__))
+
+        self.about_window = AboutWindow(parent=self)
+        self.actionAbout = QtGui.QAction("О программе", self)
+        self.actionAbout.triggered.connect(self.show_about)
+        self.menubar.addAction(self.actionAbout)
+
+    def show_about(self):
+        self.about_window.show()
+        self.about_window.raise_()
 
     def switch_sb_trim(self):
         self.sb_trim.setEnabled(self.cb_trim.isChecked())
