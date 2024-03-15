@@ -6,6 +6,20 @@ from typing import List
 import subprocess
 import json
 from loguru import logger as log
+import ffmpeg
+
+
+def get_resolution(video_path: Path | str) -> tuple[int, int]:
+    probe = ffmpeg.probe(video_path)
+    video_stream = next(
+        (stream for stream in probe["streams"] if stream["codec_type"] == "video"), None
+    )
+    if video_stream is not None:
+        width = video_stream["width"]
+        height = video_stream["height"]
+        return (width, height)
+    else:
+        raise Exception("Video stream not found.")
 
 
 def get_pts(packets) -> List[int]:
