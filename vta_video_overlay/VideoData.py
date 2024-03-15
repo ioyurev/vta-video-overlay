@@ -15,10 +15,13 @@ def fit_data(video_path: Path, data: Data):
 
 class VideoData:
     def __init__(self, video_path: Path, data: Data):
-        self.timestamps, self.emf_aligned, self.temp_aligned = fit_data(
-            video_path=video_path, data=data
-        )
+        self.data = data
         self.operator = data.operator
         self.sample = data.sample
         self.path = video_path
         self.temp_enabled = data.temp_enabled
+
+    def prepare(self):
+        self.timestamps, self.emf_aligned, self.temp_aligned = fit_data(
+            video_path=self.path, data=self.data
+        )

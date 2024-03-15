@@ -1,4 +1,5 @@
 from vta_video_overlay.VideoData import VideoData
+from vta_video_overlay.DataCollections import progress_tpl
 import cv2
 from pathlib import Path
 from PySide6 import QtCore
@@ -10,18 +11,23 @@ BG_COLOR = (63, 63, 63)
 STOPKEY = ord("q")
 
 
-class CVProcessor:
+class CVProcessor(QtCore.QObject):
     def __init__(
         self,
         video_data: VideoData,
         path_output: Path,
         progress_signal: QtCore.Signal,
+        parent=None,
     ):
+        super().__init__(parent=parent)
         self.video_data = video_data
         self.path_output = path_output
         self.path_input = video_data.path
         self.temp_enabled = video_data.temp_enabled
         self.progress_signal = progress_signal
+
+    def prepare(self):
+        self.video_data.prepare()
         self.maxindex = len(self.video_data.timestamps) - 1
 
     def make_text_template(self):
@@ -36,7 +42,6 @@ class CVProcessor:
         return template
 
     def loop(self, current_progress: int, start_timestamp: float):
-        cv2.namedWindow("video", cv2.WINDOW_GUI_NORMAL)
         self.video_input.set(cv2.CAP_PROP_POS_MSEC, start_timestamp * 1000)
         first_frame_index = int(self.video_input.get(cv2.CAP_PROP_POS_FRAMES))
         log.info(f"Отсечка по времени: {start_timestamp}\n, кадр: {first_frame_index}")
@@ -66,8 +71,7 @@ class CVProcessor:
             cv_draw_text(img=frame, text=text, pos=(50, 50))
             self.video_output.write(frame)
             progress = current_progress + (100 * frame_index / self.maxindex) // 3
-            self.progress_signal.emit(progress)
-            cv2.imshow("video", frame)
+            self.progress_signal.emit(progress_tpl(progress=progress, frame=frame))
             if cv2.waitKey(1) & 0xFF == STOPKEY:
                 log.info("Ручная остановка OpenCV")
                 break

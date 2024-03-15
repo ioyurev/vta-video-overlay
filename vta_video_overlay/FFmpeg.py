@@ -1,3 +1,4 @@
+from vta_video_overlay.DataCollections import progress_tpl
 from ffmpeg_progress_yield import FfmpegProgress
 from decimal import Decimal
 from PySide6 import QtCore
@@ -85,7 +86,7 @@ def convert_video(
     for ff_progress in ff.run_command_with_progress():
         val = int(round(ff_progress))
         progress = current_progress + val // 3
-        signal.emit(progress)
+        signal.emit(progress_tpl(progress=progress, frame=None))
         print(f"* Прогресс ffmpeg: {val}/100")
     log.info("Работа ffmpeg завершена")
     return progress

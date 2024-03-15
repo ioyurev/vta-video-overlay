@@ -2,6 +2,7 @@ from vta_video_overlay.TdaFile import Data
 from vta_video_overlay.OpenCV import CVProcessor
 from vta_video_overlay.FFmpeg import convert_video
 from vta_video_overlay.VideoData import VideoData
+from vta_video_overlay.DataCollections import progress_tpl
 from pathlib import Path
 from PySide6 import QtCore
 import tempfile
@@ -15,8 +16,7 @@ def clean(tempdir: str):
 
 
 class Worker(QtCore.QThread):
-    progress = QtCore.Signal(int)
-    step_done = QtCore.Signal(int)
+    progress = QtCore.Signal(progress_tpl)
 
     def __init__(
         self,
@@ -31,33 +31,32 @@ class Worker(QtCore.QThread):
         self.video_file_path_output = video_file_path_output
         self.data = data
         self.start_timestamp = start_timestamp
+        self.tempdir = Path(tempfile.mkdtemp())
+        self.tmpfile1 = Path(self.tempdir / "out1.mp4")
+        self.tmpfile2 = Path(self.tempdir / "out2.mp4")
+        video_data = VideoData(video_path=self.tmpfile1, data=self.data)
+        self.cv = CVProcessor(
+            video_data=video_data,
+            path_output=self.tmpfile2,
+            progress_signal=self.progress,
+            parent=self,
+        )
 
-    def do_work(self, tmpfile1: Path, tmpfile2: Path):
+    def run(self):
         progress = convert_video(
             path_input=self.video_file_path_input,
-            path_output=tmpfile1,
+            path_output=self.tmpfile1,
             signal=self.progress,
             current_progress=1,
         )
-        self.step_done.emit(progress)
-        video_data = VideoData(video_path=tmpfile1, data=self.data)
-        cv = CVProcessor(
-            video_data=video_data, path_output=tmpfile2, progress_signal=self.progress
-        )
-        progress = cv.run(
+        self.cv.prepare()
+        progress = self.cv.run(
             current_progress=progress, start_timestamp=self.start_timestamp
         )
-        self.step_done.emit(progress)
         convert_video(
-            path_input=tmpfile2,
+            path_input=self.tmpfile2,
             path_output=self.video_file_path_output,
             signal=self.progress,
             current_progress=progress,
         )
-
-    def run(self):
-        with tempfile.TemporaryDirectory() as tempdir:
-            tmpfile1 = Path(tempdir + "/out1.mp4")
-            tmpfile2 = Path(tempdir + "/out2.mp4")
-            self.do_work(tmpfile1=tmpfile1, tmpfile2=tmpfile2)
-            clean(tempdir=tempdir)
+        clean(tempdir=self.tempdir)
