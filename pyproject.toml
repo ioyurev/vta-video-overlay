@@ -23,6 +23,7 @@ commitizen = "^3.18.0"
 mypy = "^1.9.0"
 autoflake = "^2.3.0"
 pyinstaller = "^6.5.0"
+pillow = "^10.2.0"
 
 [tool.commitizen]
 version = "0.2.0"
