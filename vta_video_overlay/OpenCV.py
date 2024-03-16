@@ -72,9 +72,6 @@ class CVProcessor(QtCore.QObject):
             self.video_output.write(frame)
             progress = current_progress + (100 * frame_index / self.maxindex) // 3
             self.progress_signal.emit(progress_tpl(progress=progress, frame=frame))
-            if cv2.waitKey(1) & 0xFF == STOPKEY:
-                log.info("Ручная остановка OpenCV")
-                break
         return progress
 
     @log.catch
@@ -97,7 +94,6 @@ class CVProcessor(QtCore.QObject):
         )
         self.video_input.release()
         self.video_output.release()
-        cv2.destroyAllWindows()
         log.info("Работа OpenCV завершена")
         return progress
 
