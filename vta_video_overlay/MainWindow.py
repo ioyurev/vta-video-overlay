@@ -58,6 +58,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     @QtCore.Slot()
     def pick_tda(self):
         path = pick_path_open(filter="Файл VPTAnalizer(*.tda)")
+        if path == "":
+            return
         self.edit_tda.setText(path)
         self.data = Data(path=Path(path), temp_enabled=self.cb_temp.isChecked())
         self.data_to_gui()
@@ -65,6 +67,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     @QtCore.Slot()
     def pick_video(self):
         path = pick_path_open(filter="Видео(*.asf *.mp4);;Все файлы(*.*)")
+        if path == "":
+            return
         self.edit_video.setText(path)
         size = get_resolution(path)
         self.video_preview.setMinimumHeight(self.video_preview.height())
