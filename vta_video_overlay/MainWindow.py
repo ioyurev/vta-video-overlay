@@ -6,7 +6,7 @@ from vta_video_overlay.DataCollections import progress_tpl
 from vta_video_overlay.FFmpeg import get_resolution
 from ui.MainWindow import Ui_MainWindow
 from loguru import logger as log
-from PySide6 import QtWidgets, QtGui
+from PySide6 import QtWidgets, QtGui, QtCore
 from pathlib import Path
 import cv2
 
@@ -46,19 +46,23 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.menubar.addAction(self.actionAbout)
         self.video_preview.setScaledContents(True)
 
+    @QtCore.Slot()
     def show_about(self):
         self.about_window.show()
         self.about_window.raise_()
 
+    @QtCore.Slot()
     def switch_sb_trim(self):
         self.sb_trim.setEnabled(self.cb_trim.isChecked())
 
+    @QtCore.Slot()
     def pick_tda(self):
         path = pick_path_open(filter="Файл VPTAnalizer(*.tda)")
         self.edit_tda.setText(path)
         self.data = Data(path=Path(path), temp_enabled=self.cb_temp.isChecked())
         self.data_to_gui()
 
+    @QtCore.Slot()
     def pick_video(self):
         path = pick_path_open(filter="Видео(*.asf *.mp4);;Все файлы(*.*)")
         self.edit_video.setText(path)
@@ -106,12 +110,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.data.coeff = coeff
         self.data.recalc_temp()
 
+    @QtCore.Slot()
     def finished(self):
         self.raise_()
         QtWidgets.QMessageBox.information(self, "vta-video-overlay", "Работа завершена")
         self.set_stuff_enabled(True)
         self.progressbar.setValue(0)
 
+    @QtCore.Slot()
     def update_progressbar(self, tpl: progress_tpl):
         self.update_image(frame=tpl.frame)
         self.progressbar.setValue(tpl.progress)
@@ -121,6 +127,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             return
         self.video_preview.setPixmap(cv_to_pixmap(frame))
 
+    @QtCore.Slot()
     def overlay(self):
         savepath = Path(pick_path_save())
         self.gui_to_data()
