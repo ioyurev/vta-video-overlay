@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 from io import StringIO
+from loguru import logger as log
 
 
 class Headers:
@@ -63,9 +64,31 @@ class Data:
             self.data_temp = xn(self.data_emf)
 
     def to_excel(self, path: Path):
+        log.info(f"Сохранение в Excel: {path}")
         df = pd.DataFrame()
         df[Headers.TIME] = self.data_time.round(3)
         df[Headers.EMF] = self.data_emf.round(3)
         if self.temp_enabled:
             df[Headers.TEMP] = self.data_temp.round()
-        df.to_excel(excel_writer=path, index=False)
+        writer = pd.ExcelWriter(path, engine="xlsxwriter")
+        sheet_name = "Sheet1"
+        df.to_excel(excel_writer=writer, index=False, sheet_name=sheet_name)
+        workbook = writer.book
+        worksheet = writer.sheets[sheet_name]
+        chart = workbook.add_chart({"type": "scatter", "subtype": "straight"})
+        if self.temp_enabled:
+            column = "C"
+            yaxis = Headers.TEMP
+        else:
+            column = "B"
+            yaxis = Headers.EMF
+        series_data = {
+            "categories": f"={sheet_name}!$A:$A",
+            "values": f"={sheet_name}!${column}:${column}",
+        }
+        chart.add_series(series_data)
+        chart.set_legend({"position": "none"})
+        chart.set_x_axis({"name": Headers.TIME})
+        chart.set_y_axis({"name": yaxis})
+        worksheet.insert_chart("E2", chart)
+        workbook.close()
