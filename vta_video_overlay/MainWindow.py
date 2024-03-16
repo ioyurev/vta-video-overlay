@@ -121,7 +121,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.set_stuff_enabled(True)
         self.progressbar.setValue(0)
 
-    @QtCore.Slot()
+    @QtCore.Slot(progress_tpl)
     def update_progressbar(self, tpl: progress_tpl):
         self.update_image(frame=tpl.frame)
         self.progressbar.setValue(tpl.progress)
