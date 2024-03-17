@@ -1,5 +1,6 @@
 <RCC>
   <qresource prefix="assets">
+    <file>translation_ru.qm</file>
     <file>icon.png</file>
   </qresource>
 </RCC>

@@ -1,23 +1,39 @@
 # VTA video overlay
-Программа для наложения на видео метаданных и текущих показателей измерения визуального термического анализа.
-![](https://gitflic.ru/project/i-o-yurev/vta-video-overlay/blob/raw?file=screenshot.png)
+<p align="center"><img src="assets/icon.png" width="100"/>
+<br/>
+Program for overlaying VTA data on video.
+</p>
 
-# Требования
+# Requirements
 python 3.12
 <br/>
 [ffmpeg](https://www.ffmpeg.org/download.html)
 <br/>
 [poetry](https://python-poetry.org/docs/)
 
-# Установка
+# Install
 ```r
 git clone https://gitflic.ru/project/i-o-yurev/vta-video-overlay.git
 cd vta-video-overlay
 poetry install
 ```
 
-# Запуск
-В корне проекта выполнить команду:
+# Launch
+Before starting for the first time, run the command:
 ```r
-poetry run py vta_video_overlay
+uic.cmd
 ```
+
+To launch, run the command:
+```r
+run poetry python vta_video_overlay
+```
+
+# Build
+```r
+build.cmd
+```
+After executing the command, the build will be located in the pyinstaller/dist subfolder.
+
+# Screenshot
+<p align="center"><img src="screenshot.png"/>

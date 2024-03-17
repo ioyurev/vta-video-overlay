@@ -1,5 +1,5 @@
-from vta_video_overlay.VideoData import VideoData
-from vta_video_overlay.DataCollections import progress_tpl
+from .VideoData import VideoData
+from .DataCollections import progress_tpl
 import cv2
 from pathlib import Path
 from PySide6 import QtCore
@@ -8,7 +8,6 @@ from loguru import logger as log
 CODEC = "mp4v"
 TEXT_COLOR = (0, 255, 255)
 BG_COLOR = (63, 63, 63)
-STOPKEY = ord("q")
 
 
 class CVProcessor(QtCore.QObject):
@@ -31,20 +30,28 @@ class CVProcessor(QtCore.QObject):
         self.maxindex = len(self.video_data.timestamps) - 1
 
     def make_text_template(self):
-        template = (
-            f"Оператор: {self.video_data.operator}\n"
-            f"Образец: {self.video_data.sample}\n"
-            f"Время (с): {{time:.3f}}\n"
-            f"ЭДС (мВ): {{emf:.3f}}"
+        template = "".join(
+            (
+                self.tr("Operator: {operator}\n").format(
+                    operator=self.video_data.operator
+                ),
+                self.tr("Sample: {sample}\n").format(sample=self.video_data.sample),
+                self.tr("Time (s): {time:.3f}\n"),
+                self.tr("EMF (mV): {emf:.3f}"),
+            )
         )
         if self.temp_enabled:
-            template += "\nТемпература (C): {temp:.0f}"
+            template += self.tr("\nTemperature (C): {temp:.0f}")
         return template
 
     def loop(self, current_progress: int, start_timestamp: float):
         self.video_input.set(cv2.CAP_PROP_POS_MSEC, start_timestamp * 1000)
         first_frame_index = int(self.video_input.get(cv2.CAP_PROP_POS_FRAMES))
-        log.info(f"Отсечка по времени: {start_timestamp}\n, кадр: {first_frame_index}")
+        log.info(
+            self.tr("Time trim: {timestamp}, frame: {i}").format(
+                timestamp=start_timestamp, i=first_frame_index
+            )
+        )
         text_template = self.make_text_template()
         ret = True
         while ret:
@@ -57,7 +64,6 @@ class CVProcessor(QtCore.QObject):
             timestamp = self.video_data.timestamps[frame_index]
             if timestamp < start_timestamp:
                 continue
-            print(f"* OpenCV обрабатывает кадр {frame_index}/{self.maxindex}")
             if self.temp_enabled:
                 text = text_template.format(
                     time=timestamp,
@@ -81,7 +87,7 @@ class CVProcessor(QtCore.QObject):
         frame_height = int(self.video_input.get(4))
         size = (frame_width, frame_height)
         fps = self.video_input.get(cv2.CAP_PROP_FPS)
-        log.info(f"Разрешение видео: {size}")
+        log.info(self.tr("Video resolution: {size}").format(size=size))
         log.info(f"FPS: {fps}")
         self.video_output = cv2.VideoWriter(
             filename=str(self.path_output),
@@ -94,7 +100,7 @@ class CVProcessor(QtCore.QObject):
         )
         self.video_input.release()
         self.video_output.release()
-        log.info("Работа OpenCV завершена")
+        log.info(self.tr("OpenCV has finished"))
         return progress
 
 

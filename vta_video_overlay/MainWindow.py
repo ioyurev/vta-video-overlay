@@ -1,10 +1,10 @@
-from vta_video_overlay.TdaFile import Data
-from vta_video_overlay.Worker import Worker
-from vta_video_overlay.__version__ import __version__
-from vta_video_overlay.AboutWindow import AboutWindow
-from vta_video_overlay.DataCollections import progress_tpl
-from vta_video_overlay.FFmpeg import get_resolution
-from ui.MainWindow import Ui_MainWindow
+from .TdaFile import Data
+from .Worker import Worker
+from .__version__ import __version__
+from .AboutWindow import AboutWindow
+from .DataCollections import progress_tpl
+from .FFmpeg import FFmpeg
+from .ui.MainWindow import Ui_MainWindow
 from loguru import logger as log
 from PySide6 import QtWidgets, QtGui, QtCore
 from pathlib import Path
@@ -21,10 +21,12 @@ def cv_to_pixmap(cv_image: cv2.typing.MatLike) -> QtGui.QPixmap:
 
 
 def pick_path_save():
-    return QtWidgets.QFileDialog.getSaveFileName(filter="Видео(*.mp4)")[0]
+    return QtWidgets.QFileDialog.getSaveFileName(
+        filter=QtCore.QCoreApplication.tr("Video(*.mp4)")
+    )[0]
 
 
-def pick_path_open(filter="Все файлы(*.*)"):
+def pick_path_open(filter=QtCore.QCoreApplication.tr("All files(*.*)")):
     return QtWidgets.QFileDialog.getOpenFileName(filter=filter)[0]
 
 
@@ -38,10 +40,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.btn_video.clicked.connect(self.pick_video)
         self.btn_convert.clicked.connect(self.overlay)
         self.cb_trim.clicked.connect(self.switch_sb_trim)
-        self.statusbar.addWidget(QtWidgets.QLabel(__version__))
-
+        self.statusbar.addWidget(
+            QtWidgets.QLabel(self.tr("Version: {v}").format(v=__version__))
+        )
         self.about_window = AboutWindow(parent=self)
-        self.actionAbout = QtGui.QAction("О программе", self)
+        self.actionAbout = QtGui.QAction(self.tr("About"), self)
         self.actionAbout.triggered.connect(self.show_about)
         self.menubar.addAction(self.actionAbout)
         self.video_preview.setScaledContents(True)
@@ -57,7 +60,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     @QtCore.Slot()
     def pick_tda(self):
-        path = pick_path_open(filter="Файл VPTAnalizer(*.tda)")
+        path = pick_path_open(filter=self.tr("VPTAnalizer file(*.tda)"))
         if path == "":
             return
         self.edit_tda.setText(path)
@@ -66,11 +69,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     @QtCore.Slot()
     def pick_video(self):
-        path = pick_path_open(filter="Видео(*.asf *.mp4);;Все файлы(*.*)")
+        path = pick_path_open(filter=self.tr("Video(*.asf *.mp4);;All files(*.*)"))
         if path == "":
             return
         self.edit_video.setText(path)
-        size = get_resolution(path)
+        size = FFmpeg().get_resolution(video_path=path)
         self.video_preview.setMinimumHeight(self.video_preview.height())
         self.video_preview.setMinimumWidth(
             int(size[0] * self.video_preview.height() / size[1])
@@ -117,7 +120,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     @QtCore.Slot()
     def finished(self):
         self.raise_()
-        QtWidgets.QMessageBox.information(self, "vta-video-overlay", "Работа завершена")
+        QtWidgets.QMessageBox.information(
+            self, "VTA video overlay", self.tr("Video processing completed")
+        )
         self.set_stuff_enabled(True)
         self.progressbar.setValue(0)
 
@@ -139,11 +144,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             start_timestamp = self.sb_trim.value()
         else:
             start_timestamp = 0.0
-        log.info(f"Оператор: {self.data.operator}")
-        log.info(f"Образец: {self.data.sample}")
-        log.info(f"Включен расчет температуры: {self.data.temp_enabled}")
-        log.info(f"Коэффициенты: {self.data.coeff}")
-        log.info(f"Начало отсечки: {start_timestamp}")
+        log.info(self.tr("Operator: {operator}").format(operator=self.data.operator))
+        log.info(self.tr("Sample: {sample}").format(sample=self.data.sample))
+        log.info(
+            self.tr("Temperature calibration enabled: {bool}").format(
+                bool=self.data.temp_enabled
+            )
+        )
+        log.info(
+            self.tr("Polynomial coefficients: {coeff}").format(coeff=self.data.coeff)
+        )
         w = Worker(
             parent=self,
             video_file_path_input=Path(self.edit_video.text()),

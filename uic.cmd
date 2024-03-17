@@ -1,3 +1,4 @@
-pyside6-uic.exe ui\src\MainWindow.ui > ui\MainWindow.py
-autoflake -i --remove-all-unused-imports ui\MainWindow.py
-pyside6-rcc.exe assets\resources.qrc > ui\resources_rc.py
+pyside6-uic.exe assets\MainWindow.ui > vta_video_overlay\ui\MainWindow.py
+autoflake -i --remove-all-unused-imports vta_video_overlay\ui\MainWindow.py
+pyside6-lrelease.exe .\translation_ru.ts -qm assets\translation_ru.qm
+pyside6-rcc.exe assets\resources.qrc > vta_video_overlay\ui\resources_rc.py

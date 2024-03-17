@@ -3,6 +3,7 @@ import numpy as np
 from pathlib import Path
 from io import StringIO
 from loguru import logger as log
+from PySide6 import QtCore
 
 
 class Headers:
@@ -29,12 +30,13 @@ def parse_lines(lines: list[str]):
     return lines_data, sample_name, operator, coeff
 
 
-class Data:
+class Data(QtCore.QObject):
     operator: str
     sample: str
     coeff: list[str]
 
     def __init__(self, path: Path, temp_enabled: bool) -> None:
+        super().__init__()
         with open(file=path, mode="r", encoding="cp1251") as f:
             lines_raw = f.readlines()
         lines_data, self.sample, self.operator, self.coeff = parse_lines(
@@ -64,7 +66,7 @@ class Data:
             self.data_temp = xn(self.data_emf)
 
     def to_excel(self, path: Path):
-        log.info(f"Сохранение в Excel: {path}")
+        log.info(self.tr("Saving .xlsx: {path}").format(path=path))
         df = pd.DataFrame()
         df[Headers.TIME] = self.data_time.round(3)
         df[Headers.EMF] = self.data_emf.round(3)

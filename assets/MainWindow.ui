@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>788</width>
-    <height>416</height>
+    <height>462</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -17,10 +17,10 @@
    </sizepolicy>
   </property>
   <property name="windowTitle">
-   <string>VTA video overlay</string>
+   <string notr="true">VTA video overlay</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="../../assets/resources.qrc">
+   <iconset resource="resources.qrc">
     <normaloff>:/assets/icon.png</normaloff>:/assets/icon.png</iconset>
   </property>
   <widget class="QWidget" name="centralwidget">
@@ -53,7 +53,7 @@
     <item row="7" column="0">
      <widget class="QLabel" name="label_4">
       <property name="text">
-       <string>a1 =</string>
+       <string notr="true">a1 =</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -63,14 +63,14 @@
     <item row="1" column="0">
      <widget class="QPushButton" name="btn_video">
       <property name="text">
-       <string>Выбрать файл видео</string>
+       <string>Select video file</string>
       </property>
      </widget>
     </item>
     <item row="5" column="0" colspan="2">
      <widget class="QCheckBox" name="cb_temp">
       <property name="text">
-       <string>Температурная калибровка y = a3*x^3 + a2*x^2 + a1*x + a0</string>
+       <string>Temperature calibration y = a3*x^3 + a2*x^2 + a1*x + a0</string>
       </property>
       <property name="checked">
        <bool>true</bool>
@@ -92,7 +92,7 @@
     <item row="6" column="0">
      <widget class="QLabel" name="label_3">
       <property name="text">
-       <string>a0 =</string>
+       <string notr="true">a0 =</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -102,7 +102,7 @@
     <item row="3" column="0">
      <widget class="QLabel" name="label">
       <property name="text">
-       <string>Оператор:</string>
+       <string>Operator:</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -112,14 +112,14 @@
     <item row="11" column="0" colspan="2">
      <widget class="QPushButton" name="btn_convert">
       <property name="text">
-       <string>Наложить данные</string>
+       <string>Start video processing</string>
       </property>
      </widget>
     </item>
     <item row="8" column="0">
      <widget class="QLabel" name="label_6">
       <property name="text">
-       <string>a2 =</string>
+       <string notr="true">a2 =</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -149,7 +149,7 @@
     <item row="9" column="0">
      <widget class="QLabel" name="label_5">
       <property name="text">
-       <string>a3 =</string>
+       <string notr="true">a3 =</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -159,14 +159,14 @@
     <item row="0" column="0">
      <widget class="QPushButton" name="btn_tda">
       <property name="text">
-       <string>Выбрать файл tda</string>
+       <string>Select .tda file</string>
       </property>
      </widget>
     </item>
     <item row="10" column="0">
      <widget class="QCheckBox" name="cb_trim">
       <property name="text">
-       <string>Обрезать от (с):</string>
+       <string>Trim from (sec):</string>
       </property>
       <property name="checked">
        <bool>true</bool>
@@ -176,7 +176,7 @@
     <item row="2" column="0" colspan="2">
      <widget class="QCheckBox" name="cb_excel">
       <property name="text">
-       <string>Конвертировать файл в формат Excel</string>
+       <string>Convert .tda to .xlsx</string>
       </property>
       <property name="checked">
        <bool>true</bool>
@@ -193,7 +193,7 @@
     <item row="4" column="0">
      <widget class="QLabel" name="label_2">
       <property name="text">
-       <string>Образец:</string>
+       <string>Sample:</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -251,7 +251,7 @@
   <widget class="QStatusBar" name="statusbar"/>
  </widget>
  <resources>
-  <include location="../../assets/resources.qrc"/>
+  <include location="resources.qrc"/>
  </resources>
  <connections/>
 </ui>

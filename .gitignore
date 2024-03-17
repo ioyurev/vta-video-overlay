@@ -1,5 +1,6 @@
 example
-ui/*.py
+vta_video_overlay/ui/*.py
+assets/*.qm
 __pycache__
 pyinstaller
 logs

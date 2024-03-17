@@ -1,8 +1,8 @@
-from vta_video_overlay.TdaFile import Data
-from vta_video_overlay.OpenCV import CVProcessor
-from vta_video_overlay.FFmpeg import convert_video
-from vta_video_overlay.VideoData import VideoData
-from vta_video_overlay.DataCollections import progress_tpl
+from .TdaFile import Data
+from .OpenCV import CVProcessor
+from .FFmpeg import FFmpeg
+from .VideoData import VideoData
+from .DataCollections import progress_tpl
 from pathlib import Path
 from PySide6 import QtCore
 import tempfile
@@ -43,7 +43,7 @@ class Worker(QtCore.QThread):
         )
 
     def run(self):
-        progress = convert_video(
+        progress = FFmpeg().convert_video(
             path_input=self.video_file_path_input,
             path_output=self.tmpfile1,
             signal=self.progress,
@@ -53,7 +53,7 @@ class Worker(QtCore.QThread):
         progress = self.cv.run(
             current_progress=progress, start_timestamp=self.start_timestamp
         )
-        convert_video(
+        FFmpeg().convert_video(
             path_input=self.tmpfile2,
             path_output=self.video_file_path_output,
             signal=self.progress,
