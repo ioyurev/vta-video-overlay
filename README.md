@@ -1,5 +1,5 @@
 # VTA video overlay
-<p align="center"><img src="assets/icon.png" width="100"/>
+<p align="center"><img src="https://gitflic.ru/project/i-o-yurev/vta-video-overlay/blob/raw?file=assets/icon.png" width="100"/>
 <br/>
 Program for overlaying VTA data on video.
 </p>
@@ -36,4 +36,4 @@ build.cmd
 After executing the command, the build will be located in the pyinstaller/dist subfolder.
 
 # Screenshot
-<p align="center"><img src="screenshot.png"/>
+<p align="center"><img src="https://gitflic.ru/project/i-o-yurev/vta-video-overlay/blob/raw?file=screenshot.png"/>
