@@ -1,3 +1,9 @@
+## 0.3.1 (2024-03-18)
+
+### Fix
+
+- **__main__.py**: fixed an error at startup of the compiled distribution package
+
 ## 0.3.0 (2024-03-18)
 
 ### Feat
