@@ -1,5 +1,5 @@
 from vta_video_overlay.MainWindow import MainWindow
-import ui.resources_rc  # noqa: F401
+import vta_video_overlay.ui.resources_rc  # noqa: F401
 from PySide6 import QtWidgets, QtCore
 from loguru import logger as log
 import shutil
