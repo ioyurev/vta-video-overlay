@@ -15,6 +15,7 @@ openpyxl = "^3.1.2"
 loguru = "^0.7.2"
 ffmpeg-python = "^0.2.0"
 xlsxwriter = "^3.2.0"
+matplotlib = "^3.8.3"
 
 
 [tool.poetry.group.dev.dependencies]

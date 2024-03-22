@@ -4,6 +4,7 @@ import cv2
 from pathlib import Path
 from PySide6 import QtCore
 from loguru import logger as log
+from plotter import Plotter
 
 CODEC = "mp4v"
 TEXT_COLOR = (0, 255, 255)
@@ -16,6 +17,7 @@ class CVProcessor(QtCore.QObject):
         video_data: VideoData,
         path_output: Path,
         progress_signal: QtCore.Signal,
+        plot_enabled: bool,
         parent=None,
     ):
         super().__init__(parent=parent)
@@ -24,9 +26,11 @@ class CVProcessor(QtCore.QObject):
         self.path_input = video_data.path
         self.temp_enabled = video_data.temp_enabled
         self.progress_signal = progress_signal
+        self.plot_enabled = plot_enabled
 
     def prepare(self):
         self.video_data.prepare()
+        self.plotter = Plotter(video_data=self.video_data)
         self.maxindex = len(self.video_data.timestamps) - 1
 
     def make_text_template(self):
@@ -75,6 +79,14 @@ class CVProcessor(QtCore.QObject):
                     time=timestamp, emf=self.video_data.emf_aligned[frame_index]
                 )
             cv_draw_text(img=frame, text=text, pos=(50, 50))
+            if self.plot_enabled:
+                self.plotter.draw(index=frame_index)
+                plot_img = self.plotter.get_image()
+                plot_img = cv2.cvtColor(plot_img, cv2.COLOR_RGB2BGR)
+                # paste img at right top corner
+                x = frame.shape[1] - plot_img.shape[1]
+                y = 0
+                cv_paste_image(img1=frame, img2=plot_img[:, :, :3], x=x, y=y)
             self.video_output.write(frame)
             progress = current_progress + (100 * frame_index / self.maxindex) // 3
             self.progress_signal.emit(progress_tpl(progress=progress, frame=frame))
@@ -130,3 +142,22 @@ def cv_draw_text(img: cv2.typing.MatLike, text: str, pos: tuple[int, int]):
             lineType=cv2.LINE_4,
         )
         y += 50
+
+
+def cv_paste_image(
+    img1: cv2.typing.MatLike, img2: cv2.typing.MatLike, x: int = 0, y: int = 0
+):
+    """
+    Paste img2 onto img1 at the specified location.
+    """
+    # Get the dimensions of img2
+    height, width, _ = img2.shape
+
+    # Create a region of interest (ROI) on img1
+    roi = img1[y : y + height, x : x + width]
+
+    # Make the ROI black
+    roi[:] = (0, 0, 0)
+
+    # Add img2 to the ROI
+    roi[:, :, :3] = img2

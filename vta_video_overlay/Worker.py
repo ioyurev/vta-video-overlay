@@ -25,6 +25,7 @@ class Worker(QtCore.QThread):
         video_file_path_output: Path,
         data: Data,
         start_timestamp: float,
+        plot_enabled: bool,
     ):
         super().__init__(parent=parent)
         self.video_file_path_input = video_file_path_input
@@ -40,6 +41,7 @@ class Worker(QtCore.QThread):
             path_output=self.tmpfile2,
             progress_signal=self.progress,
             parent=self,
+            plot_enabled=plot_enabled,
         )
 
     def run(self):
