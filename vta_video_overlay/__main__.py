@@ -23,7 +23,15 @@ class App(QtWidgets.QApplication):
     def check_environment(self):
         for binary in ["ffmpeg", "ffprobe"]:
             if shutil.which(binary) is None:
-                raise Exception(self.tr("{bin} not found.").format(bin=binary))
+                log.error(f"{binary} not found.")
+                QtWidgets.QMessageBox.critical(
+                    None,
+                    self.tr("Error"),
+                    self.tr("{bin} not found.").format(bin=binary),
+                )
+                return False
+        log.debug("Environement check successful")
+        return True
 
     def set_language(self):
         system_language = locale.getlocale()[0].split("_")[0]
@@ -34,8 +42,9 @@ class App(QtWidgets.QApplication):
             self.installTranslator(translator)
 
     def run(self):
+        if not self.check_environment():
+            return
         self.set_language()
-        self.check_environment()
         w = MainWindow()
         w.show()
         self.exec()
