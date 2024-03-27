@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-from vta_video_overlay.VideoData import VideoData
+from vta_video_overlay.video_data import VideoData
 import numpy as np
 
 plt.style.use("dark_background")

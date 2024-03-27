@@ -1,4 +1,4 @@
-from .DataCollections import ProcessProgress
+from .data_collections import ProcessProgress
 from ffmpeg_progress_yield import FfmpegProgress
 from decimal import Decimal
 from PySide6 import QtCore

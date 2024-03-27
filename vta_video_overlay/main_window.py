@@ -1,9 +1,9 @@
-from .TdaFile import Data
-from .Worker import Worker
+from .tda_file import Data
+from .worker import Worker
 from .__version__ import __version__
-from .AboutWindow import AboutWindow
-from .DataCollections import ProcessProgress, ProcessResult
-from .FFmpeg import FFmpeg
+from .about_window import AboutWindow
+from .data_collections import ProcessProgress, ProcessResult
+from .ffmpeg_utils import FFmpeg
 from .ui.MainWindow import Ui_MainWindow
 from loguru import logger as log
 from PySide6 import QtWidgets, QtGui, QtCore

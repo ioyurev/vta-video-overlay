@@ -1,5 +1,5 @@
-from .TdaFile import Data
-from .FFmpeg import FFmpeg
+from .tda_file import Data
+from .ffmpeg_utils import FFmpeg
 from PySide6 import QtCore
 from pathlib import Path
 import numpy as np

@@ -1,5 +1,5 @@
-from .VideoData import VideoData
-from .DataCollections import ProcessProgress
+from .video_data import VideoData
+from .data_collections import ProcessProgress
 import cv2
 from pathlib import Path
 from PySide6 import QtCore

@@ -1,8 +1,8 @@
-from .TdaFile import Data
-from .OpenCV import CVProcessor
-from .FFmpeg import FFmpeg
-from .VideoData import VideoData
-from .DataCollections import ProcessProgress, ProcessResult
+from .tda_file import Data
+from .opencv_processor import CVProcessor
+from .ffmpeg_utils import FFmpeg
+from .video_data import VideoData
+from .data_collections import ProcessProgress, ProcessResult
 from pathlib import Path
 from PySide6 import QtCore
 import tempfile
