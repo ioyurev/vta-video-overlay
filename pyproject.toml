@@ -6,7 +6,7 @@ authors = ["Илья Олегович Юрьев <i.o.yurev@yandex.ru>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = ">=3.12,<3.13"
+python = ">=3.11,<3.13"
 pyside6 = "^6.6.2"
 ffmpeg-progress-yield = "^0.7.8"
 pandas = "^2.2.1"
