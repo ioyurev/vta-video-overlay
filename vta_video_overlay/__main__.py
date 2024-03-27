@@ -4,6 +4,19 @@ from PySide6 import QtWidgets, QtCore
 from loguru import logger as log
 import shutil
 import locale
+import os
+
+
+def setup_logging():
+    app_folder = "vta_video_overlay"
+    appdata_folder = os.getenv("APPDATA")
+    app_folder_path = os.path.join(appdata_folder, app_folder)
+
+    if not os.path.exists(app_folder_path):
+        os.makedirs(app_folder_path)
+
+    log_file_path = os.path.join(app_folder_path, "logs/{time}.log")
+    log.add(log_file_path)
 
 
 class App(QtWidgets.QApplication):
@@ -29,5 +42,5 @@ class App(QtWidgets.QApplication):
 
 
 if __name__ == "__main__":
-    log.add("logs/file_{time}.log")
+    setup_logging()
     App().run()
