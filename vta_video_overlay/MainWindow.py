@@ -2,7 +2,7 @@ from .TdaFile import Data
 from .Worker import Worker
 from .__version__ import __version__
 from .AboutWindow import AboutWindow
-from .DataCollections import progress_tpl
+from .DataCollections import ProcessProgress, ProcessResult
 from .FFmpeg import FFmpeg
 from .ui.MainWindow import Ui_MainWindow
 from loguru import logger as log
@@ -118,19 +118,27 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.data.coeff = coeff
         self.data.recalc_temp()
 
-    @QtCore.Slot()
-    def finished(self):
+    @QtCore.Slot(ProcessResult)
+    def finished(self, tpl: ProcessResult):
         self.raise_()
-        QtWidgets.QMessageBox.information(
-            self, "VTA video overlay", self.tr("Video processing completed")
-        )
+        if tpl.is_success:
+            QtWidgets.QMessageBox.information(
+                self, "VTA video overlay", self.tr("Video processing completed")
+            )
+        else:
+            log.exception(tpl.exception)
+            QtWidgets.QMessageBox.critical(
+                self,
+                "Error",
+                self.tr("Video processing failed.\nException occurred. See log."),
+            )
         self.set_stuff_enabled(True)
         self.progressbar.setValue(0)
 
-    @QtCore.Slot(progress_tpl)
-    def update_progressbar(self, tpl: progress_tpl):
+    @QtCore.Slot(ProcessProgress)
+    def update_progressbar(self, tpl: ProcessProgress):
         self.update_image(frame=tpl.frame)
-        self.progressbar.setValue(tpl.progress)
+        self.progressbar.setValue(tpl.value)
 
     def update_image(self, frame: cv2.typing.MatLike | None):
         if frame is None:
@@ -165,7 +173,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             plot_enabled=self.cb_plot.isChecked(),
         )
         w.progress.connect(self.update_progressbar)
-        w.finished.connect(self.finished)
+        w.signal_finished.connect(self.finished)
         if self.cb_excel.isChecked():
             excelpath = Path(self.edit_tda.text()).with_suffix(".xlsx")
             self.data.to_excel(excelpath)

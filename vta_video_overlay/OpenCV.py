@@ -1,5 +1,5 @@
 from .VideoData import VideoData
-from .DataCollections import progress_tpl
+from .DataCollections import ProcessProgress
 import cv2
 from pathlib import Path
 from PySide6 import QtCore
@@ -89,10 +89,9 @@ class CVProcessor(QtCore.QObject):
                 cv_paste_image(img1=frame, img2=plot_img[:, :, :3], x=x, y=y)
             self.video_output.write(frame)
             progress = current_progress + (100 * frame_index / self.maxindex) // 3
-            self.progress_signal.emit(progress_tpl(progress=progress, frame=frame))
+            self.progress_signal.emit(ProcessProgress(value=progress, frame=frame))
         return progress
 
-    @log.catch
     def run(self, current_progress: int, start_timestamp: float):
         self.video_input = cv2.VideoCapture(str(self.path_input))
         frame_width = int(self.video_input.get(3))

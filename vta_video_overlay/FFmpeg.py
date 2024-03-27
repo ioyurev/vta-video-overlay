@@ -1,4 +1,4 @@
-from .DataCollections import progress_tpl
+from .DataCollections import ProcessProgress
 from ffmpeg_progress_yield import FfmpegProgress
 from decimal import Decimal
 from PySide6 import QtCore
@@ -101,6 +101,6 @@ class FFmpeg(QtCore.QObject):
         for ff_progress in ff.run_command_with_progress():
             val = int(round(ff_progress))
             progress = current_progress + val // 3
-            signal.emit(progress_tpl(progress=progress, frame=None))
+            signal.emit(ProcessProgress(value=progress))
         log.info(self.tr("ffmpeg conversion finished."))
         return progress

@@ -2,7 +2,7 @@ from .TdaFile import Data
 from .OpenCV import CVProcessor
 from .FFmpeg import FFmpeg
 from .VideoData import VideoData
-from .DataCollections import progress_tpl
+from .DataCollections import ProcessProgress, ProcessResult
 from pathlib import Path
 from PySide6 import QtCore
 import tempfile
@@ -16,7 +16,8 @@ def clean(tempdir: str):
 
 
 class Worker(QtCore.QThread):
-    progress = QtCore.Signal(progress_tpl)
+    progress = QtCore.Signal(ProcessProgress)
+    signal_finished = QtCore.Signal(ProcessResult)
 
     def __init__(
         self,
@@ -44,7 +45,7 @@ class Worker(QtCore.QThread):
             plot_enabled=plot_enabled,
         )
 
-    def run(self):
+    def do_work(self):
         progress = FFmpeg().convert_video(
             path_input=self.video_file_path_input,
             path_output=self.tmpfile1,
@@ -61,4 +62,12 @@ class Worker(QtCore.QThread):
             signal=self.progress,
             current_progress=progress,
         )
-        clean(tempdir=self.tempdir)
+
+    def run(self):
+        try:
+            self.do_work()
+            self.signal_finished.emit(ProcessResult(is_success=True))
+        except Exception as e:
+            self.signal_finished.emit(ProcessResult(is_success=False, exception=e))
+        finally:
+            clean(tempdir=self.tempdir)
