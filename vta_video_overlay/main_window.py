@@ -147,7 +147,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     @QtCore.Slot()
     def overlay(self):
-        savepath = Path(pick_path_save())
+        path_str = pick_path_save()
+        if path_str == "":
+            return
+        savepath = Path(path_str)
         self.gui_to_data()
         if self.cb_trim.isChecked():
             start_timestamp = self.sb_trim.value()
