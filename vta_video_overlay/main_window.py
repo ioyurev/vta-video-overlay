@@ -60,24 +60,40 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     @QtCore.Slot()
     def pick_tda(self):
-        path = pick_path_open(filter=self.tr("VPTAnalizer file(*.tda)"))
-        if path == "":
-            return
-        self.edit_tda.setText(path)
-        self.data = Data(path=Path(path), temp_enabled=self.cb_temp.isChecked())
-        self.data_to_gui()
+        try:
+            path = pick_path_open(filter=self.tr("VPTAnalizer file(*.tda)"))
+            if path == "":
+                return
+            self.edit_tda.setText(path)
+            self.data = Data(path=Path(path), temp_enabled=self.cb_temp.isChecked())
+            self.data_to_gui()
+        except Exception as e:
+            log.exception(e)
+            QtWidgets.QMessageBox.critical(
+                self,
+                "Error",
+                self.tr("Failed to read TDA file."),
+            )
 
     @QtCore.Slot()
     def pick_video(self):
-        path = pick_path_open(filter=self.tr("Video(*.asf *.mp4);;All files(*.*)"))
-        if path == "":
-            return
-        self.edit_video.setText(path)
-        size = FFmpeg().get_resolution(video_path=path)
-        self.video_preview.setMinimumHeight(self.video_preview.height())
-        self.video_preview.setMinimumWidth(
-            int(size[0] * self.video_preview.height() / size[1])
-        )
+        try:
+            path = pick_path_open(filter=self.tr("Video(*.asf *.mp4);;All files(*.*)"))
+            if path == "":
+                return
+            self.edit_video.setText(path)
+            size = FFmpeg().get_resolution(video_path=path)
+            self.video_preview.setMinimumHeight(self.video_preview.height())
+            self.video_preview.setMinimumWidth(
+                int(size[0] * self.video_preview.height() / size[1])
+            )
+        except Exception as e:
+            log.exception(e)
+            QtWidgets.QMessageBox.critical(
+                self,
+                "Error",
+                self.tr("Failed to read video file."),
+            )
 
     def set_stuff_enabled(self, val: bool):
         self.btn_tda.setEnabled(val)
