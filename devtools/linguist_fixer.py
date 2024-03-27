@@ -9,7 +9,7 @@ def process_xml_file(file_path: str):
     contexts = tree.getroot().findall("context")
     for context in contexts:
         name = context.find("name")
-        if name and (name.text == "MainWindow"):
+        if (name is not None) and (name.text == "MainWindow"):
             ui_context = context
     messages = ui_context.findall("message")
     for message in messages:
