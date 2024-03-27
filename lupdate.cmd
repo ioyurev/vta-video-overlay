@@ -1,12 +1,12 @@
 pyside6-lupdate.exe ^
 assets\MainWindow.ui ^
 vta_video_overlay\__main__.py ^
-vta_video_overlay\AboutWindow.py ^
-vta_video_overlay\FFmpeg.py ^
-vta_video_overlay\MainWindow.py ^
-vta_video_overlay\OpenCV.py ^
-vta_video_overlay\TdaFile.py ^
-vta_video_overlay\VideoData.py ^
+vta_video_overlay\about_window.py ^
+vta_video_overlay\ffmpeg_utils.py ^
+vta_video_overlay\main_window.py ^
+vta_video_overlay\opencv_processor.py ^
+vta_video_overlay\tda_file.py ^
+vta_video_overlay\video_data.py ^
 -ts translation_ru.ts
 
 python devtools/linguist_fixer.py
