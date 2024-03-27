@@ -30,7 +30,8 @@ class CVProcessor(QtCore.QObject):
 
     def prepare(self):
         self.video_data.prepare()
-        self.plotter = Plotter(video_data=self.video_data)
+        if self.plot_enabled:
+            self.plotter = Plotter(video_data=self.video_data)
         self.maxindex = len(self.video_data.timestamps) - 1
 
     def make_text_template(self):
