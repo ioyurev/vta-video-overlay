@@ -26,6 +26,7 @@ mypy = "^1.9.0"
 autoflake = "^2.3.0"
 pyinstaller = "^6.5.0"
 pillow = "^10.2.0"
+isort = "^5.13.2"
 
 [tool.commitizen]
 version = "0.3.1"
@@ -33,6 +34,9 @@ version_files = [
     "vta_video_overlay/__version__.py",
     "pyproject.toml:version"
 ]
+
+[tool.isort]
+profile = "black"
 
 [build-system]
 requires = ["poetry-core"]
