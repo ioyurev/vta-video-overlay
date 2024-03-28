@@ -1,13 +1,15 @@
-from .data_collections import ProcessProgress
-from ffmpeg_progress_yield import FfmpegProgress
+import json
+import subprocess
 from decimal import Decimal
-from PySide6 import QtCore
 from pathlib import Path
 from typing import List
-import subprocess
-import json
-from loguru import logger as log
+
 import ffmpeg
+from ffmpeg_progress_yield import FfmpegProgress
+from loguru import logger as log
+from PySide6 import QtCore
+
+from .data_collections import ProcessProgress
 
 
 def get_pts(packets) -> List[int]:
@@ -35,7 +37,6 @@ class FFmpeg(QtCore.QObject):
             raise Exception(self.tr("Video stream not found."))
 
     def get_timestamps(self, video_path: Path, index: int = 0) -> List[int]:
-        # source: https://stackoverflow.com/a/73998721/11709825
         """
         Link: https://ffmpeg.org/ffprobe.html
         My comments:
@@ -59,33 +60,30 @@ class FFmpeg(QtCore.QObject):
                 )
             )
 
-        cmd = f'ffprobe -select_streams {index} -show_entries packet=pts_time:stream=codec_type "{video_path}" -print_format json'
-        ffprobe_output = subprocess.run(cmd, capture_output=True, text=True)
-        ffprobe_output = json.loads(ffprobe_output.stdout)
+        process = subprocess.Popen(
+            [
+                "ffprobe",
+                "-v",
+                "error",
+                "-select_streams",
+                str(index),
+                "-show_entries",
+                "packet=pts_time",
+                "-of",
+                "json",
+                str(video_path),
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        stdout, stderr = process.communicate()
 
-        if len(ffprobe_output) == 0:  # type: ignore
-            raise Exception(
-                self.tr(
-                    "The file {path} is not a video file or the file does not exist."
-                ).format(path=video_path)
-            )
+        if process.returncode != 0:
+            raise Exception(stderr.decode("utf-8"))
 
-        if len(ffprobe_output["streams"]) == 0:  # type: ignore
-            raise ValueError(
-                self.tr("The index {i} is not in the file {path}.").format(
-                    i=index, path=video_path
-                )
-            )
+        probe: dict = json.loads(stdout.decode("utf-8"))
 
-        stream_type = ffprobe_output["streams"][0]["codec_type"]  # type: ignore
-        if stream_type != "video":
-            raise ValueError(
-                self.tr(
-                    "The index {i} is not a video stream. It is an {type} stream."
-                ).format(i=index, type=stream_type)
-            )
-
-        return get_pts(ffprobe_output["packets"])  # type: ignore
+        return get_pts(probe["packets"])
 
     def convert_video(
         self,
