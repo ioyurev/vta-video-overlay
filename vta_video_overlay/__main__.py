@@ -1,15 +1,23 @@
-from vta_video_overlay.main_window import MainWindow
-import vta_video_overlay.ui.resources_rc  # noqa: F401
-from PySide6 import QtWidgets, QtCore
-from loguru import logger as log
-import shutil
 import locale
 import os
+import shutil
+import sys
+
+from loguru import logger as log
+from PySide6 import QtCore, QtWidgets
+
+import vta_video_overlay.ui.resources_rc  # noqa: F401
+from vta_video_overlay.main_window import MainWindow
 
 
 def setup_logging():
     app_folder = "vta_video_overlay"
-    appdata_folder = os.getenv("APPDATA")
+    if sys.platform.startswith("linux"):
+        appdata_folder = os.environ.get(
+            "XDG_DATA_HOME", os.path.expanduser("~/.local/share")
+        )
+    else:
+        appdata_folder = os.getenv("APPDATA")
     app_folder_path = os.path.join(appdata_folder, app_folder)
 
     if not os.path.exists(app_folder_path):
@@ -35,7 +43,7 @@ class App(QtWidgets.QApplication):
 
     def set_language(self):
         system_language = locale.getlocale()[0].split("_")[0]
-        if system_language == "Russian":
+        if system_language == "Russian" or system_language == "ru":
             log.debug("System language detected as Russian")
             translator = QtCore.QTranslator(parent=self)
             translator.load(":/assets/translation_ru.qm")

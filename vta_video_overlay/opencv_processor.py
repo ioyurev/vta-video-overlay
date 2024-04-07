@@ -1,10 +1,12 @@
-from .video_data import VideoData
-from .data_collections import ProcessProgress
-import cv2
 from pathlib import Path
-from PySide6 import QtCore
+
+import cv2
 from loguru import logger as log
-from plotter import Plotter
+from PySide6 import QtCore
+
+from .data_collections import ProcessProgress
+from .plotter import Plotter
+from .video_data import VideoData
 
 CODEC = "mp4v"
 TEXT_COLOR = (0, 255, 255)

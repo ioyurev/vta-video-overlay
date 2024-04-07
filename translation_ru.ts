@@ -28,12 +28,12 @@
 <context>
     <name>App</name>
     <message>
-        <location filename="vta_video_overlay/__main__.py" line="29"/>
+        <location filename="vta_video_overlay/__main__.py" line="35"/>
         <source>Error</source>
         <translation>Ошибка</translation>
     </message>
     <message>
-        <location filename="vta_video_overlay/__main__.py" line="30"/>
+        <location filename="vta_video_overlay/__main__.py" line="36"/>
         <source>{bin} not found.</source>
         <translation>{bin} не найден.</translation>
     </message>
@@ -109,37 +109,34 @@ Temperature (C): {temp:.0f}</source>
         <translation>Видео поток не найден.</translation>
     </message>
     <message>
-        <location filename="vta_video_overlay/ffmpeg_utils.py" line="57"/>
+        <location filename="vta_video_overlay/ffmpeg_utils.py" line="56"/>
         <source>Invalid path for the video file: &quot;{path}&quot;</source>
         <translation>Неверный путь к видеофайлу: &quot;{path}&quot;</translation>
     </message>
     <message>
-        <location filename="vta_video_overlay/ffmpeg_utils.py" line="70"/>
         <source>The file {path} is not a video file or the file does not exist.</source>
-        <translation>Файл {path} не является видеофайлом или файл не существует.</translation>
+        <translation type="vanished">Файл {path} не является видеофайлом или файл не существует.</translation>
     </message>
     <message>
-        <location filename="vta_video_overlay/ffmpeg_utils.py" line="75"/>
         <source>The index {i} is not in the file {path}.</source>
-        <translation>Индекс {i} отсутствует в файле {path}.</translation>
+        <translation type="vanished">Индекс {i} отсутствует в файле {path}.</translation>
     </message>
     <message>
-        <location filename="vta_video_overlay/ffmpeg_utils.py" line="85"/>
         <source>The index {i} is not a video stream. It is an {type} stream.</source>
-        <translation>Индекс {i} не является видеопотоком. Это поток {type}.</translation>
+        <translation type="vanished">Индекс {i} не является видеопотоком. Это поток {type}.</translation>
     </message>
     <message>
-        <location filename="vta_video_overlay/ffmpeg_utils.py" line="99"/>
+        <location filename="vta_video_overlay/ffmpeg_utils.py" line="95"/>
         <source>Converting file: {path}</source>
         <translation>Преобразование файла: {path}</translation>
     </message>
     <message>
-        <location filename="vta_video_overlay/ffmpeg_utils.py" line="100"/>
+        <location filename="vta_video_overlay/ffmpeg_utils.py" line="96"/>
         <source>Saving to: {path}</source>
         <translation>Сохранение в: {path}</translation>
     </message>
     <message>
-        <location filename="vta_video_overlay/ffmpeg_utils.py" line="105"/>
+        <location filename="vta_video_overlay/ffmpeg_utils.py" line="101"/>
         <source>ffmpeg conversion finished.</source>
         <translation>Преобразование ffmpeg завершено.</translation>
     </message>
