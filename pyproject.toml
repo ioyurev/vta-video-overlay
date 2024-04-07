@@ -2,7 +2,7 @@
 name = "vta-video-overlay"
 version = "0.3.1"
 description = ""
-authors = ["Илья Олегович Юрьев <i.o.yurev@yandex.ru>"]
+authors = ["Ilya O. Yurev <i.o.yurev@yandex.ru>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
