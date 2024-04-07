@@ -4,6 +4,10 @@ version = "0.3.1"
 description = ""
 authors = ["Ilya O. Yurev <i.o.yurev@yandex.ru>"]
 readme = "README.md"
+include = [
+    "vta_video_overlay/ui/MainWindow.py",
+    "vta_video_overlay/ui/resources_rc.py",
+]
 
 [tool.poetry.dependencies]
 python = ">=3.11,<3.13"
