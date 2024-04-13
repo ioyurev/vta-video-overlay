@@ -29,8 +29,6 @@ class CVProcessor(QtCore.QObject):
         self.temp_enabled = video_data.temp_enabled
         self.progress_signal = progress_signal
         self.plot_enabled = plot_enabled
-
-    def prepare(self):
         self.video_data.prepare()
         if self.plot_enabled:
             self.plotter = Plotter(video_data=self.video_data)
@@ -91,7 +89,7 @@ class CVProcessor(QtCore.QObject):
                 y = 0
                 cv_paste_image(img1=frame, img2=plot_img[:, :, :3], x=x, y=y)
             self.video_output.write(frame)
-            progress = current_progress + (100 * frame_index / self.maxindex) // 3
+            progress = current_progress + int((100 * frame_index / self.maxindex) // 3)
             self.progress_signal.emit(ProcessProgress(value=progress, frame=frame))
         return progress
 

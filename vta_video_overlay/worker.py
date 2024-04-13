@@ -1,13 +1,16 @@
-from .tda_file import Data
-from .opencv_processor import CVProcessor
-from .ffmpeg_utils import FFmpeg
-from .video_data import VideoData
-from .data_collections import ProcessProgress, ProcessResult
-from pathlib import Path
-from PySide6 import QtCore
-import tempfile
-import shutil
 import os
+import shutil
+import tempfile
+from pathlib import Path
+
+from loguru import logger as log
+from PySide6 import QtCore
+
+from .data_collections import ProcessProgress, ProcessResult
+from .ffmpeg_utils import FFmpeg
+from .opencv_processor import CVProcessor
+from .tda_file import Data
+from .video_data import VideoData
 
 
 def clean(tempdir: str):
@@ -33,31 +36,37 @@ class Worker(QtCore.QThread):
         self.video_file_path_output = video_file_path_output
         self.data = data
         self.start_timestamp = start_timestamp
-        self.tempdir = Path(tempfile.mkdtemp())
-        self.tmpfile1 = Path(self.tempdir / "out1.mp4")
-        self.tmpfile2 = Path(self.tempdir / "out2.mp4")
-        video_data = VideoData(video_path=self.tmpfile1, data=self.data)
-        self.cv = CVProcessor(
-            video_data=video_data,
-            path_output=self.tmpfile2,
-            progress_signal=self.progress,
-            parent=self,
-            plot_enabled=plot_enabled,
-        )
+        self.plot_enabled = plot_enabled
 
     def do_work(self):
-        progress = FFmpeg().convert_video(
-            path_input=self.video_file_path_input,
-            path_output=self.tmpfile1,
-            signal=self.progress,
-            current_progress=1,
-        )
-        self.cv.prepare()
-        progress = self.cv.run(
-            current_progress=progress, start_timestamp=self.start_timestamp
-        )
+        self.tempdir = Path(tempfile.mkdtemp())
+        tmpfile1 = Path(self.tempdir / "out1.mp4")
+        tmpfile2 = Path(self.tempdir / "out2.mp4")
+
+        if FFmpeg().check_for_packets(video_path=self.video_file_path_input):
+            file_to_overlay = self.video_file_path_input
+            progress = 34
+        else:
+            file_to_overlay = tmpfile1
+            log.warning("Input video has no timestamps. Preconverting video...")
+            progress = FFmpeg().convert_video(
+                path_input=self.video_file_path_input,
+                path_output=file_to_overlay,
+                signal=self.progress,
+                current_progress=1,
+            )
+
+        video_data = VideoData(video_path=file_to_overlay, data=self.data)
+
+        progress = CVProcessor(
+            video_data=video_data,
+            path_output=tmpfile2,
+            progress_signal=self.progress,
+            parent=self,
+            plot_enabled=self.plot_enabled,
+        ).run(current_progress=progress, start_timestamp=self.start_timestamp)
         FFmpeg().convert_video(
-            path_input=self.tmpfile2,
+            path_input=tmpfile2,
             path_output=self.video_file_path_output,
             signal=self.progress,
             current_progress=progress,

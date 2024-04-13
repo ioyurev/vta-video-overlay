@@ -102,3 +102,10 @@ class FFmpeg(QtCore.QObject):
             signal.emit(ProcessProgress(value=progress))
         log.info(self.tr("ffmpeg conversion finished."))
         return progress
+
+    def check_for_packets(self, video_path: Path) -> bool:
+        try:
+            self.get_timestamps(video_path)
+            return True
+        except KeyError:
+            return False
