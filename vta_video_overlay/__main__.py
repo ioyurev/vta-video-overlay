@@ -2,6 +2,7 @@ import locale
 import os
 import shutil
 import sys
+from pathlib import Path
 
 from loguru import logger as log
 from PySide6 import QtCore, QtWidgets
@@ -10,7 +11,7 @@ import vta_video_overlay.ui.resources_rc  # noqa: F401
 from vta_video_overlay.main_window import MainWindow
 
 
-def setup_logging():
+def set_appdata_folder():
     app_folder = "vta_video_overlay"
     if sys.platform.startswith("linux"):
         appdata_folder = os.environ.get(
@@ -18,12 +19,14 @@ def setup_logging():
         )
     else:
         appdata_folder = os.getenv("APPDATA")
-    app_folder_path = os.path.join(appdata_folder, app_folder)
+    appdata_path = os.path.join(appdata_folder, app_folder)
+    if not os.path.exists(appdata_path):
+        os.makedirs(appdata_path)
+    return Path(appdata_path)
 
-    if not os.path.exists(app_folder_path):
-        os.makedirs(app_folder_path)
 
-    log_file_path = os.path.join(app_folder_path, "logs/{time}.log")
+def setup_logging(appdata_path: Path):
+    log_file_path = appdata_path / "logs/{time}.log"
     log.add(log_file_path)
 
 
@@ -49,15 +52,16 @@ class App(QtWidgets.QApplication):
             translator.load(":/assets/translation_ru.qm")
             self.installTranslator(translator)
 
-    def run(self):
+    def run(self, appdata_path: Path):
         if not self.check_environment():
             return
         self.set_language()
-        w = MainWindow()
+        w = MainWindow(appdata_path / "logs")
         w.show()
         self.exec()
 
 
 if __name__ == "__main__":
-    setup_logging()
-    App().run()
+    appdata_path = set_appdata_folder()
+    setup_logging(appdata_path)
+    App().run(appdata_path)

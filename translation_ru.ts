@@ -28,12 +28,12 @@
 <context>
     <name>App</name>
     <message>
-        <location filename="vta_video_overlay/__main__.py" line="35"/>
+        <location filename="vta_video_overlay/__main__.py" line="40"/>
         <source>Error</source>
         <translation>Ошибка</translation>
     </message>
     <message>
-        <location filename="vta_video_overlay/__main__.py" line="36"/>
+        <location filename="vta_video_overlay/__main__.py" line="41"/>
         <source>{bin} not found.</source>
         <translation>{bin} не найден.</translation>
     </message>
@@ -104,12 +104,12 @@ Temperature (C): {temp:.0f}</source>
 <context>
     <name>FFmpeg</name>
     <message>
-        <location filename="vta_video_overlay/ffmpeg_utils.py" line="35"/>
+        <location filename="vta_video_overlay/ffmpeg_utils.py" line="37"/>
         <source>Video stream not found.</source>
         <translation>Видео поток не найден.</translation>
     </message>
     <message>
-        <location filename="vta_video_overlay/ffmpeg_utils.py" line="56"/>
+        <location filename="vta_video_overlay/ffmpeg_utils.py" line="58"/>
         <source>Invalid path for the video file: &quot;{path}&quot;</source>
         <translation>Неверный путь к видеофайлу: &quot;{path}&quot;</translation>
     </message>
@@ -126,17 +126,17 @@ Temperature (C): {temp:.0f}</source>
         <translation type="vanished">Индекс {i} не является видеопотоком. Это поток {type}.</translation>
     </message>
     <message>
-        <location filename="vta_video_overlay/ffmpeg_utils.py" line="95"/>
+        <location filename="vta_video_overlay/ffmpeg_utils.py" line="97"/>
         <source>Converting file: {path}</source>
         <translation>Преобразование файла: {path}</translation>
     </message>
     <message>
-        <location filename="vta_video_overlay/ffmpeg_utils.py" line="96"/>
+        <location filename="vta_video_overlay/ffmpeg_utils.py" line="98"/>
         <source>Saving to: {path}</source>
         <translation>Сохранение в: {path}</translation>
     </message>
     <message>
-        <location filename="vta_video_overlay/ffmpeg_utils.py" line="101"/>
+        <location filename="vta_video_overlay/ffmpeg_utils.py" line="103"/>
         <source>ffmpeg conversion finished.</source>
         <translation>Преобразование ffmpeg завершено.</translation>
     </message>
@@ -150,6 +150,10 @@ Temperature (C): {temp:.0f}</source>
     <message>
         <source>About</source>
         <translation>О программе</translation>
+    </message>
+    <message>
+        <source>Open logs folder</source>
+        <translation>Открыть папку журналов</translation>
     </message>
     <message>
         <source>VPTAnalizer file(*.tda)</source>
@@ -233,12 +237,12 @@ Exception occurred. See log.</source>
 <context>
     <name>QtCore.QCoreApplication</name>
     <message>
-        <location filename="vta_video_overlay/main_window.py" line="26"/>
+        <location filename="vta_video_overlay/main_window.py" line="40"/>
         <source>Video(*.mp4)</source>
         <translation>Видео(*.mp4)</translation>
     </message>
     <message>
-        <location filename="vta_video_overlay/main_window.py" line="29"/>
+        <location filename="vta_video_overlay/main_window.py" line="43"/>
         <source>All files(*.*)</source>
         <translation>Все файлы(*.*)</translation>
     </message>

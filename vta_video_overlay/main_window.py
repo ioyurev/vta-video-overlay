@@ -1,14 +1,28 @@
-from .tda_file import Data
-from .worker import Worker
+import platform
+import subprocess
+from pathlib import Path
+
+import cv2
+from loguru import logger as log
+from PySide6 import QtCore, QtGui, QtWidgets
+
 from .__version__ import __version__
 from .about_window import AboutWindow
 from .data_collections import ProcessProgress, ProcessResult
 from .ffmpeg_utils import FFmpeg
+from .tda_file import Data
 from .ui.MainWindow import Ui_MainWindow
-from loguru import logger as log
-from PySide6 import QtWidgets, QtGui, QtCore
-from pathlib import Path
-import cv2
+from .worker import Worker
+
+
+def open_file_explorer(path: Path):
+    system = platform.system()
+    if system == "Windows":
+        subprocess.Popen(["explorer", path], shell=True)
+    elif system == "Linux":
+        subprocess.Popen(["xdg-open", path])
+    else:
+        print("Unsupported operating system")
 
 
 def cv_to_pixmap(cv_image: cv2.typing.MatLike) -> QtGui.QPixmap:
@@ -33,7 +47,7 @@ def pick_path_open(filter=QtCore.QCoreApplication.tr("All files(*.*)")):
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     data: Data
 
-    def __init__(self):
+    def __init__(self, appdata_path: Path):
         super().__init__()
         self.setupUi(self)
         self.btn_tda.clicked.connect(self.pick_tda)
@@ -47,6 +61,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.actionAbout = QtGui.QAction(self.tr("About"), self)
         self.actionAbout.triggered.connect(self.show_about)
         self.menubar.addAction(self.actionAbout)
+
+        self.explorer_action = QtGui.QAction(self.tr("Open logs folder"), self)
+        self.explorer_action.triggered.connect(lambda: open_file_explorer(appdata_path))
+        self.menubar.addAction(self.explorer_action)
+
         self.video_preview.setScaledContents(True)
 
     @QtCore.Slot()
