@@ -102,6 +102,13 @@ Temperature (C): {temp:.0f}</source>
     </message>
 </context>
 <context>
+    <name>Dialog</name>
+    <message>
+        <source>Crop selection</source>
+        <translation>Выделение кадрирования</translation>
+    </message>
+</context>
+<context>
     <name>FFmpeg</name>
     <message>
         <location filename="vta_video_overlay/ffmpeg_utils.py" line="37"/>

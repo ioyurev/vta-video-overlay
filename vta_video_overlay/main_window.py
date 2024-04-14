@@ -8,6 +8,8 @@ from PySide6 import QtCore, QtGui, QtWidgets
 
 from .__version__ import __version__
 from .about_window import AboutWindow
+from .crop_selection_widgets import RectangleGeometry
+from .crop_selection_window import CropSelectionWindow
 from .data_collections import ProcessProgress, ProcessResult
 from .ffmpeg_utils import FFmpeg
 from .tda_file import Data
@@ -46,6 +48,7 @@ def pick_path_open(filter=QtCore.QCoreApplication.tr("All files(*.*)")):
 
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     data: Data
+    crop_rect: RectangleGeometry | None = None
 
     def __init__(self, appdata_path: Path):
         super().__init__()
@@ -66,7 +69,29 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.explorer_action.triggered.connect(lambda: open_file_explorer(appdata_path))
         self.menubar.addAction(self.explorer_action)
 
+        self.crop_action = QtGui.QAction(self.tr("Crop"), self)
+        self.crop_action.triggered.connect(self.crop)
+        self.crop_action.setEnabled(False)
+        self.menubar.addAction(self.crop_action)
+
         self.video_preview.setScaledContents(True)
+
+        self.sel_win = CropSelectionWindow(parent=self)
+        self.sel_win.accepted.connect(self.crop_done)
+
+    def crop_done(self):
+        self.crop_rect = self.sel_win.get_crop_rect()
+        log.info(self.tr("Crop done: {xywh}").format(xywh=self.crop_rect))
+        self.video_preview.setMinimumWidth(
+            int(self.crop_rect.w * self.video_preview.height() / self.crop_rect.h)
+        )
+
+    @QtCore.Slot()
+    def crop(self):
+        if self.edit_video.text() == "":
+            return
+        self.sel_win.set_file(file=Path(self.edit_video.text()))
+        self.sel_win.show()
 
     @QtCore.Slot()
     def show_about(self):
@@ -101,6 +126,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             if path == "":
                 return
             self.edit_video.setText(path)
+            self.crop_action.setEnabled(True)
             size = FFmpeg().get_resolution(video_path=path)
             self.video_preview.setMinimumHeight(self.video_preview.height())
             self.video_preview.setMinimumWidth(
