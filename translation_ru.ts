@@ -265,6 +265,10 @@ Exception occurred. See log.</source>
         <source>All files(*.*)</source>
         <translation>Все файлы(*.*)</translation>
     </message>
+    <message>
+        <source>Cleaning {tempdir}</source>
+        <translation>Очистка {tempdir}</translation>
+    </message>
 </context>
 <context>
     <name>VideoData</name>

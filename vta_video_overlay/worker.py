@@ -15,6 +15,7 @@ from .video_data import VideoData
 
 
 def clean(tempdir: str):
+    log.info(QtCore.QCoreApplication.tr("Cleaning {tempdir}").format(tempdir=tempdir))
     if os.path.exists(tempdir):
         shutil.rmtree(tempdir)
 
