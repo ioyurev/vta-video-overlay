@@ -6,6 +6,7 @@ from pathlib import Path
 from loguru import logger as log
 from PySide6 import QtCore
 
+from .crop_selection_widgets import RectangleGeometry
 from .data_collections import ProcessProgress, ProcessResult
 from .ffmpeg_utils import FFmpeg
 from .opencv_processor import CVProcessor
@@ -30,6 +31,7 @@ class Worker(QtCore.QThread):
         data: Data,
         start_timestamp: float,
         plot_enabled: bool,
+        crop_rect: RectangleGeometry | None = None,
     ):
         super().__init__(parent=parent)
         self.video_file_path_input = video_file_path_input
@@ -37,6 +39,7 @@ class Worker(QtCore.QThread):
         self.data = data
         self.start_timestamp = start_timestamp
         self.plot_enabled = plot_enabled
+        self.crop_rect = crop_rect
 
     def do_work(self):
         self.tempdir = Path(tempfile.mkdtemp())
@@ -64,6 +67,7 @@ class Worker(QtCore.QThread):
             progress_signal=self.progress,
             parent=self,
             plot_enabled=self.plot_enabled,
+            crop_rect=self.crop_rect,
         ).run(current_progress=progress, start_timestamp=self.start_timestamp)
         FFmpeg().convert_video(
             path_input=tmpfile2,

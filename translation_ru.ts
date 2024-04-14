@@ -4,23 +4,19 @@
 <context>
     <name>AboutWindow</name>
     <message>
-        <location filename="vta_video_overlay/about_window.py" line="11"/>
         <source>About</source>
         <translation>О программе</translation>
     </message>
     <message>
-        <location filename="vta_video_overlay/about_window.py" line="23"/>
         <source>Program for overlaying VTA data on video.</source>
         <oldsource>Program for video overlay of VTA data.</oldsource>
         <translation>Программа для наложения данных ВТА на видео.</translation>
     </message>
     <message>
-        <location filename="vta_video_overlay/about_window.py" line="27"/>
         <source>Ilya O. Yurev, &lt;a href=&quot;mailto:{email}&quot;&gt;{email}&lt;/a&gt;</source>
         <translation>Илья Олегович Юрьев, &lt;a href=&quot;mailto:{email}&quot;&gt;{email}&lt;/a&gt;</translation>
     </message>
     <message>
-        <location filename="vta_video_overlay/about_window.py" line="37"/>
         <source>Version: {v}</source>
         <translation>Версия: {v}</translation>
     </message>
@@ -28,12 +24,10 @@
 <context>
     <name>App</name>
     <message>
-        <location filename="vta_video_overlay/__main__.py" line="40"/>
         <source>Error</source>
         <translation>Ошибка</translation>
     </message>
     <message>
-        <location filename="vta_video_overlay/__main__.py" line="41"/>
         <source>{bin} not found.</source>
         <translation>{bin} не найден.</translation>
     </message>
@@ -41,54 +35,72 @@
 <context>
     <name>CVProcessor</name>
     <message>
-        <location filename="vta_video_overlay/opencv_processor.py" line="40"/>
         <source>Operator: {operator}
 </source>
-        <translation>Оператор: {operator}
+        <translation type="vanished">Оператор: {operator}
 </translation>
     </message>
     <message>
-        <location filename="vta_video_overlay/opencv_processor.py" line="43"/>
         <source>Sample: {sample}
 </source>
-        <translation>Образец: {sample}
+        <translation type="vanished">Образец: {sample}
 </translation>
     </message>
     <message>
-        <location filename="vta_video_overlay/opencv_processor.py" line="44"/>
         <source>Time (s): {time:.3f}
 </source>
         <oldsource>Time (s): {{time.3f}}
 </oldsource>
-        <translation>Время (с): {time:.3f}
+        <translation type="vanished">Время (с): {time:.3f}
 </translation>
     </message>
     <message>
-        <location filename="vta_video_overlay/opencv_processor.py" line="45"/>
         <source>EMF (mV): {emf:.3f}</source>
         <oldsource>EMF (mV): {{emf:.3f}}</oldsource>
-        <translation>ЭДС (мВ): {emf:.3f}</translation>
+        <translation type="vanished">ЭДС (мВ): {emf:.3f}</translation>
     </message>
     <message>
-        <location filename="vta_video_overlay/opencv_processor.py" line="50"/>
+        <source>Time (s): {time:.1f}
+</source>
+        <translation type="vanished">Время (с): {time:.1f}
+</translation>
+    </message>
+    <message>
+        <source>EMF (mV): {emf:.2f}</source>
+        <translation type="vanished">ЭДС (мВ): {emf:.2f}</translation>
+    </message>
+    <message>
         <source>
 Temperature (C): {temp:.0f}</source>
         <oldsource>Temperature (C): {temp:.0f}</oldsource>
-        <translation>
+        <translation type="vanished">
 Температура (C): {temp:.0f}</translation>
     </message>
     <message>
-        <location filename="vta_video_overlay/opencv_processor.py" line="56"/>
+        <source>Operator: {operator}</source>
+        <translation>Оператор: {operator}</translation>
+    </message>
+    <message>
+        <source>Sample: {sample}</source>
+        <translation>Образец: {sample}</translation>
+    </message>
+    <message>
+        <source>t(s): {time:.1f}</source>
+        <translation>t(с): {time:.1f}</translation>
+    </message>
+    <message>
+        <source>E(mV): {emf:.2f}</source>
+        <translation>Е(мВ): {emf:.2f}</translation>
+    </message>
+    <message>
         <source>Time trim: {timestamp}, frame: {i}</source>
         <translation>Обрезка по времени: {timestamp}, кадру: {i}</translation>
     </message>
     <message>
-        <location filename="vta_video_overlay/opencv_processor.py" line="102"/>
         <source>Video resolution: {size}</source>
         <translation>Разрешение видео: {size}</translation>
     </message>
     <message>
-        <location filename="vta_video_overlay/opencv_processor.py" line="115"/>
         <source>OpenCV has finished</source>
         <translation>OpenCV завершил работу</translation>
     </message>
@@ -96,7 +108,6 @@ Temperature (C): {temp:.0f}</source>
 <context>
     <name>Data</name>
     <message>
-        <location filename="vta_video_overlay/tda_file.py" line="69"/>
         <source>Saving .xlsx: {path}</source>
         <translation>Сохранение .xlsx: {path}</translation>
     </message>
@@ -111,12 +122,10 @@ Temperature (C): {temp:.0f}</source>
 <context>
     <name>FFmpeg</name>
     <message>
-        <location filename="vta_video_overlay/ffmpeg_utils.py" line="37"/>
         <source>Video stream not found.</source>
         <translation>Видео поток не найден.</translation>
     </message>
     <message>
-        <location filename="vta_video_overlay/ffmpeg_utils.py" line="58"/>
         <source>Invalid path for the video file: &quot;{path}&quot;</source>
         <translation>Неверный путь к видеофайлу: &quot;{path}&quot;</translation>
     </message>
@@ -133,17 +142,14 @@ Temperature (C): {temp:.0f}</source>
         <translation type="vanished">Индекс {i} не является видеопотоком. Это поток {type}.</translation>
     </message>
     <message>
-        <location filename="vta_video_overlay/ffmpeg_utils.py" line="97"/>
         <source>Converting file: {path}</source>
         <translation>Преобразование файла: {path}</translation>
     </message>
     <message>
-        <location filename="vta_video_overlay/ffmpeg_utils.py" line="98"/>
         <source>Saving to: {path}</source>
         <translation>Сохранение в: {path}</translation>
     </message>
     <message>
-        <location filename="vta_video_overlay/ffmpeg_utils.py" line="103"/>
         <source>ffmpeg conversion finished.</source>
         <translation>Преобразование ffmpeg завершено.</translation>
     </message>
@@ -161,6 +167,14 @@ Temperature (C): {temp:.0f}</source>
     <message>
         <source>Open logs folder</source>
         <translation>Открыть папку журналов</translation>
+    </message>
+    <message>
+        <source>Crop</source>
+        <translation>Кадрирование</translation>
+    </message>
+    <message>
+        <source>Crop done: {xywh}</source>
+        <translation>Кадрирование выполнено: {xywh}</translation>
     </message>
     <message>
         <source>VPTAnalizer file(*.tda)</source>
@@ -244,12 +258,10 @@ Exception occurred. See log.</source>
 <context>
     <name>QtCore.QCoreApplication</name>
     <message>
-        <location filename="vta_video_overlay/main_window.py" line="40"/>
         <source>Video(*.mp4)</source>
         <translation>Видео(*.mp4)</translation>
     </message>
     <message>
-        <location filename="vta_video_overlay/main_window.py" line="43"/>
         <source>All files(*.*)</source>
         <translation>Все файлы(*.*)</translation>
     </message>
@@ -257,7 +269,6 @@ Exception occurred. See log.</source>
 <context>
     <name>VideoData</name>
     <message>
-        <location filename="vta_video_overlay/video_data.py" line="21"/>
         <source>Number of video frames: {len}</source>
         <translation>Количество видеокадров: {len}</translation>
     </message>

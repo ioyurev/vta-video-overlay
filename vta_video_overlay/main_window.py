@@ -2,7 +2,6 @@ import platform
 import subprocess
 from pathlib import Path
 
-import cv2
 from loguru import logger as log
 from PySide6 import QtCore, QtGui, QtWidgets
 
@@ -25,15 +24,6 @@ def open_file_explorer(path: Path):
         subprocess.Popen(["xdg-open", path])
     else:
         print("Unsupported operating system")
-
-
-def cv_to_pixmap(cv_image: cv2.typing.MatLike) -> QtGui.QPixmap:
-    height, width, _ = cv_image.shape
-    q_image = QtGui.QImage(
-        cv_image.data, width, height, QtGui.QImage.Format.Format_BGR888
-    )
-    pixmap = QtGui.QPixmap.fromImage(q_image)
-    return pixmap
 
 
 def pick_path_save():
@@ -198,13 +188,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     @QtCore.Slot(ProcessProgress)
     def update_progressbar(self, tpl: ProcessProgress):
-        self.update_image(frame=tpl.frame)
+        if tpl.frame is not None:
+            self.video_preview.setPixmap(tpl.frame.to_pixmap())
         self.progressbar.setValue(tpl.value)
-
-    def update_image(self, frame: cv2.typing.MatLike | None):
-        if frame is None:
-            return
-        self.video_preview.setPixmap(cv_to_pixmap(frame))
 
     @QtCore.Slot()
     def overlay(self):
@@ -235,6 +221,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             data=self.data,
             start_timestamp=start_timestamp,
             plot_enabled=self.cb_plot.isChecked(),
+            crop_rect=self.crop_rect,
         )
         w.progress.connect(self.update_progressbar)
         w.signal_finished.connect(self.finished)

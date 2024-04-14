@@ -4,7 +4,9 @@ import cv2
 from loguru import logger as log
 from PySide6 import QtCore
 
+from .crop_selection_widgets import RectangleGeometry
 from .data_collections import ProcessProgress
+from .opencv_frame import Alignment, Frame
 from .plotter import Plotter
 from .video_data import VideoData
 
@@ -20,6 +22,7 @@ class CVProcessor(QtCore.QObject):
         path_output: Path,
         progress_signal: QtCore.Signal,
         plot_enabled: bool,
+        crop_rect: RectangleGeometry | None = None,
         parent=None,
     ):
         super().__init__(parent=parent)
@@ -29,25 +32,22 @@ class CVProcessor(QtCore.QObject):
         self.temp_enabled = video_data.temp_enabled
         self.progress_signal = progress_signal
         self.plot_enabled = plot_enabled
+        self.crop_rect = crop_rect
         self.video_data.prepare()
         if self.plot_enabled:
             self.plotter = Plotter(video_data=self.video_data)
         self.maxindex = len(self.video_data.timestamps) - 1
 
-    def make_text_template(self):
-        template = "".join(
-            (
-                self.tr("Operator: {operator}\n").format(
-                    operator=self.video_data.operator
-                ),
-                self.tr("Sample: {sample}\n").format(sample=self.video_data.sample),
-                self.tr("Time (s): {time:.3f}\n"),
-                self.tr("EMF (mV): {emf:.3f}"),
-            )
+    def make_text_templates(self):
+        self.str_operator = self.tr("Operator: {operator}").format(
+            operator=self.video_data.operator
         )
-        if self.temp_enabled:
-            template += self.tr("\nTemperature (C): {temp:.0f}")
-        return template
+        self.str_sample = self.tr("Sample: {sample}").format(
+            sample=self.video_data.sample
+        )
+        self.tmp_str_time = self.tr("t(s): {time:.1f}")
+        self.tmp_str_emf = self.tr("E(mV): {emf:.2f}")
+        self.tmp_str_temp = "T(C): {temp:.0f}"
 
     def loop(self, current_progress: int, start_timestamp: float):
         self.video_input.set(cv2.CAP_PROP_POS_MSEC, start_timestamp * 1000)
@@ -57,7 +57,7 @@ class CVProcessor(QtCore.QObject):
                 timestamp=start_timestamp, i=first_frame_index
             )
         )
-        text_template = self.make_text_template()
+        self.make_text_templates()
         ret = True
         while ret:
             ret, frame = self.video_input.read()
@@ -69,17 +69,46 @@ class CVProcessor(QtCore.QObject):
             timestamp = self.video_data.timestamps[frame_index]
             if timestamp < start_timestamp:
                 continue
+
+            frame = Frame(frame)
+            if self.crop_rect is not None:
+                frame.crop(
+                    x=self.crop_rect.x,
+                    y=self.crop_rect.y,
+                    w=self.crop_rect.w,
+                    h=self.crop_rect.h,
+                )
             if self.temp_enabled:
-                text = text_template.format(
-                    time=timestamp,
-                    emf=self.video_data.emf_aligned[frame_index],
-                    temp=self.video_data.temp_aligned[frame_index],
-                )
+                value = self.video_data.temp_aligned[frame_index]
             else:
-                text = text_template.format(
-                    time=timestamp, emf=self.video_data.emf_aligned[frame_index]
-                )
-            cv_draw_text(img=frame, text=text, pos=(50, 50))
+                value = self.video_data.emf_aligned[frame_index]
+            frame.put_text(
+                text=self.tmp_str_temp.format(temp=value),
+                x=0,
+                y=0,
+                align=Alignment.TOP_LEFT,
+                color=TEXT_COLOR,
+                bg_color=BG_COLOR,
+                margin=5,
+            )
+            frame.put_text(
+                text=self.str_sample,
+                x=0,
+                y=frame.size.height,
+                align=Alignment.BOTTOM_LEFT,
+                color=TEXT_COLOR,
+                bg_color=BG_COLOR,
+                margin=5,
+            )
+            frame.put_text(
+                text=self.str_operator,
+                x=frame.size.width,
+                y=frame.size.height,
+                align=Alignment.BOTTOM_RIGHT,
+                color=TEXT_COLOR,
+                bg_color=BG_COLOR,
+                margin=5,
+            )
             if self.plot_enabled:
                 self.plotter.draw(index=frame_index)
                 plot_img = self.plotter.get_image()
@@ -88,7 +117,7 @@ class CVProcessor(QtCore.QObject):
                 x = frame.shape[1] - plot_img.shape[1]
                 y = 0
                 cv_paste_image(img1=frame, img2=plot_img[:, :, :3], x=x, y=y)
-            self.video_output.write(frame)
+            self.video_output.write(frame.image)
             progress = current_progress + int((100 * frame_index / self.maxindex) // 3)
             self.progress_signal.emit(ProcessProgress(value=progress, frame=frame))
         return progress
@@ -97,7 +126,10 @@ class CVProcessor(QtCore.QObject):
         self.video_input = cv2.VideoCapture(str(self.path_input))
         frame_width = int(self.video_input.get(3))
         frame_height = int(self.video_input.get(4))
-        size = (frame_width, frame_height)
+        if self.crop_rect is not None:
+            size = (self.crop_rect.w, self.crop_rect.h)
+        else:
+            size = (frame_width, frame_height)
         fps = self.video_input.get(cv2.CAP_PROP_FPS)
         log.info(self.tr("Video resolution: {size}").format(size=size))
         log.info(f"FPS: {fps}")
@@ -114,34 +146,6 @@ class CVProcessor(QtCore.QObject):
         self.video_output.release()
         log.info(self.tr("OpenCV has finished"))
         return progress
-
-
-def cv_draw_text(img: cv2.typing.MatLike, text: str, pos: tuple[int, int]):
-    lines = text.splitlines()
-    x, y = pos
-    for line in lines:
-        text_size, _ = cv2.getTextSize(
-            text=line, fontFace=cv2.FONT_HERSHEY_COMPLEX, fontScale=1, thickness=2
-        )
-        text_w, text_h = text_size
-        cv2.rectangle(
-            img=img,
-            pt1=(x, int(y - text_h * 1.5)),
-            pt2=(x + text_w, int(y + text_h / 2)),
-            color=BG_COLOR,
-            thickness=-1,
-        )
-        cv2.putText(
-            img=img,
-            text=line,
-            org=(x, y),
-            fontFace=cv2.FONT_HERSHEY_COMPLEX,
-            fontScale=1,
-            color=TEXT_COLOR,
-            thickness=2,
-            lineType=cv2.LINE_4,
-        )
-        y += 50
 
 
 def cv_paste_image(

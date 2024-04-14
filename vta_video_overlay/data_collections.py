@@ -1,10 +1,11 @@
 from typing import NamedTuple
-from cv2.typing import MatLike
+
+from opencv_frame import Frame
 
 
 class ProcessProgress(NamedTuple):
     value: int
-    frame: MatLike | None = None
+    frame: Frame | None = None
 
 
 class ProcessResult(NamedTuple):
