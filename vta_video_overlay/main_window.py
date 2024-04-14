@@ -158,6 +158,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.sb_trim.setMaximum(self.data.data_time[-1] / 2)
 
     def gui_to_data(self):
+        if self.data is None:
+            return
         self.data.operator = self.edit_operator.text()
         self.data.sample = self.edit_sample.text()
         coeff = []
