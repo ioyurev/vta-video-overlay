@@ -4,6 +4,7 @@ import cv2
 from loguru import logger as log
 from PySide6 import QtCore
 
+from .config import config
 from .crop_selection_widgets import RectangleGeometry
 from .data_collections import ProcessProgress
 from .opencv_frame import Alignment, Frame, cv_get_text_size
@@ -112,6 +113,16 @@ class CVProcessor(QtCore.QObject):
                 bg_color=BG_COLOR,
                 margin=5,
             )
+            frame.make_border(bottom=self.text_height)
+            frame.put_text(
+                text=self.additional_text,
+                x=5,
+                y=frame.size.height - 5,
+                align=Alignment.BOTTOM_LEFT,
+                color=TEXT_COLOR,
+                bg_color=BG_COLOR,
+                margin=5,
+            )
             if self.plot_enabled:
                 self.plotter.draw(index=frame_index)
                 plot_img = self.plotter.get_image()
@@ -130,10 +141,13 @@ class CVProcessor(QtCore.QObject):
         frame_width = int(self.video_input.get(3))
         frame_height = int(self.video_input.get(4))
         self.text_height = cv_get_text_size("").height * 2
+        self.additional_text_enabled = config.get_additional_text_enabled()
+        self.additional_text = config.get_additional_text()
+        add_height = self.text_height * (1 + self.additional_text_enabled)
         if self.crop_rect is not None:
-            size = (self.crop_rect.w, self.crop_rect.h + self.text_height)
+            size = (self.crop_rect.w, self.crop_rect.h + add_height)
         else:
-            size = (frame_width, frame_height + self.text_height)
+            size = (frame_width, frame_height + add_height)
         fps = self.video_input.get(cv2.CAP_PROP_FPS)
         log.info(self.tr("Video resolution: {size}").format(size=size))
         log.info(f"FPS: {fps}")
