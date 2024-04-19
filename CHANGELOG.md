@@ -1,3 +1,42 @@
+## 0.4.0 (2024-04-20)
+
+### Feat
+
+- **opencv_processor.py**: added additional text rendering
+- added config file
+- **opencv_processor.py**: added bottom border to frame
+- **worker.py**: addded log message for temporary directory cleaning
+- **main_window.py**: added check for selected data file
+- added video cropping
+- added crop selection feature
+- added button to open logs folder
+- added skipping video preconverting if there are timestamps in the source video file
+- added linux support
+- **__main__.py**: added message window output in case of environment check error
+- **main_window.py**: added exception catching when selecting tda and video files
+- **opencv_processor.py**: added disabling the plotter when plotting is turned off
+- **translation_ru.ts**: updated translation
+- added dialog box in case of exception in video processing
+- **__main__.py**: logs have been moved to the program folder in AppData
+- added feature to overlay dE/dt plot
+
+### Fix
+
+- **uic.sh**: added ui pre-compilation for crop selection window
+- **crop_selection_window.py**: fixed window initialization
+- **opencv_processor.py**: fixed invalid import of plotter
+- **main_window.py**: fixed an error when an empty path is selected for saving video
+- **linguist_fixer.py**: fixed error in context search
+
+### Refactor
+
+- adjusted text scale
+- added isort
+- **worker.py**: file renamed by snake_case
+- defined the minimum version of python as 3.11
+- updated translation
+- modules renamed by snake_case
+
 ## 0.3.1 (2024-03-18)
 
 ### Fix
