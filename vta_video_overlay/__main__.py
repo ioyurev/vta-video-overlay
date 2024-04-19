@@ -8,6 +8,7 @@ from loguru import logger as log
 from PySide6 import QtCore, QtWidgets
 
 import vta_video_overlay.ui.resources_rc  # noqa: F401
+from vta_video_overlay.config import config
 from vta_video_overlay.main_window import MainWindow
 
 
@@ -19,9 +20,10 @@ def set_appdata_folder():
         )
     else:
         appdata_folder = os.getenv("APPDATA")
-    appdata_path = os.path.join(appdata_folder, app_folder)
+    appdata_path = Path(os.path.join(appdata_folder, app_folder))
     if not os.path.exists(appdata_path):
         os.makedirs(appdata_path)
+    config.read_config(appdata_path / "config.ini")
     return Path(appdata_path)
 
 
