@@ -9,7 +9,7 @@ from .ui.CropSelectionWindow import Ui_Dialog
 
 class CropSelectionWindow(QtWidgets.QDialog, Ui_Dialog):
     def __init__(self, parent=None):
-        super().__init__(parent=parent)
+        super().__init__(parent)
         self.setupUi(self)
         self.horizontalSlider.sliderReleased.connect(self.slider_released)
         self.graphicsView.rectangle_changed.connect(self.update_spinboxes)
