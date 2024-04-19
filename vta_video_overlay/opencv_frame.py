@@ -15,7 +15,7 @@ class Alignment(Enum):
 
 class Font:
     face = cv2.FONT_HERSHEY_COMPLEX
-    scale = 1.5
+    scale = 1.0
     thickness = 2
     linetype = cv2.LINE_AA
 
@@ -69,8 +69,9 @@ class Frame:
         color: tuple[int, int, int] = (255, 255, 255),
         bg_color: tuple[int, int, int] | None = None,
         margin=0,
+        scale=Font.scale,
     ):
-        text_size = cv_get_text_size(text)
+        text_size = cv_get_text_size(text, scale=scale)
         if align == Alignment.TOP_RIGHT:
             text_x = x - text_size.width - margin
             text_y = y + text_size.height + margin
@@ -98,19 +99,19 @@ class Frame:
             text,
             (text_x, text_y),
             Font.face,
-            Font.scale,
+            scale,
             color,
             Font.thickness,
             cv2.LINE_AA,
         )
 
 
-def cv_get_text_size(text: str):
+def cv_get_text_size(text: str, scale=Font.scale):
     return Size(
         *cv2.getTextSize(
             text=text,
             fontFace=Font.face,
-            fontScale=Font.scale,
+            fontScale=scale,
             thickness=Font.thickness,
         )[0]
     )

@@ -90,6 +90,7 @@ class CVProcessor(QtCore.QObject):
                 color=TEXT_COLOR,
                 bg_color=BG_COLOR,
                 margin=5,
+                scale=2.0,
             )
             frame.put_text(
                 text=self.str_sample,
@@ -99,6 +100,7 @@ class CVProcessor(QtCore.QObject):
                 color=TEXT_COLOR,
                 bg_color=BG_COLOR,
                 margin=5,
+                scale=2.0,
             )
             frame.make_border(bottom=self.text_height)
             frame.put_text(
