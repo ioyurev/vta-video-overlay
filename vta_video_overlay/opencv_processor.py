@@ -6,7 +6,7 @@ from PySide6 import QtCore
 
 from .crop_selection_widgets import RectangleGeometry
 from .data_collections import ProcessProgress
-from .opencv_frame import Alignment, Frame
+from .opencv_frame import Alignment, Frame, cv_get_text_size
 from .plotter import Plotter
 from .video_data import VideoData
 
@@ -84,8 +84,8 @@ class CVProcessor(QtCore.QObject):
                 value = self.video_data.emf_aligned[frame_index]
             frame.put_text(
                 text=self.tmp_str_temp.format(temp=value),
-                x=0,
-                y=0,
+                x=5,
+                y=5,
                 align=Alignment.TOP_LEFT,
                 color=TEXT_COLOR,
                 bg_color=BG_COLOR,
@@ -93,18 +93,19 @@ class CVProcessor(QtCore.QObject):
             )
             frame.put_text(
                 text=self.str_sample,
-                x=0,
-                y=frame.size.height,
+                x=5,
+                y=frame.size.height - 5,
                 align=Alignment.BOTTOM_LEFT,
                 color=TEXT_COLOR,
                 bg_color=BG_COLOR,
                 margin=5,
             )
+            frame.make_border(bottom=self.text_height)
             frame.put_text(
                 text=self.str_operator,
-                x=frame.size.width,
-                y=frame.size.height,
-                align=Alignment.BOTTOM_RIGHT,
+                x=5,
+                y=frame.size.height - 5,
+                align=Alignment.BOTTOM_LEFT,
                 color=TEXT_COLOR,
                 bg_color=BG_COLOR,
                 margin=5,
@@ -126,10 +127,11 @@ class CVProcessor(QtCore.QObject):
         self.video_input = cv2.VideoCapture(str(self.path_input))
         frame_width = int(self.video_input.get(3))
         frame_height = int(self.video_input.get(4))
+        self.text_height = cv_get_text_size("").height * 2
         if self.crop_rect is not None:
-            size = (self.crop_rect.w, self.crop_rect.h)
+            size = (self.crop_rect.w, self.crop_rect.h + self.text_height)
         else:
-            size = (frame_width, frame_height)
+            size = (frame_width, frame_height + self.text_height)
         fps = self.video_input.get(cv2.CAP_PROP_FPS)
         log.info(self.tr("Video resolution: {size}").format(size=size))
         log.info(f"FPS: {fps}")
