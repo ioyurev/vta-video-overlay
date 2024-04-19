@@ -1,6 +1,6 @@
 from typing import NamedTuple
 
-from opencv_frame import Frame
+from .opencv_frame import Frame
 
 
 class ProcessProgress(NamedTuple):
