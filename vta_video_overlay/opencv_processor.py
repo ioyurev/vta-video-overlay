@@ -114,15 +114,16 @@ class CVProcessor(QtCore.QObject):
                 margin=5,
             )
             frame.make_border(bottom=self.text_height)
-            frame.put_text(
-                text=config.additional_text,
-                x=5,
-                y=frame.size.height - 5,
-                align=Alignment.BOTTOM_LEFT,
-                color=TEXT_COLOR,
-                bg_color=BG_COLOR,
-                margin=5,
-            )
+            if config.additional_text_enabled:
+                frame.put_text(
+                    text=config.additional_text,
+                    x=5,
+                    y=frame.size.height - 5,
+                    align=Alignment.BOTTOM_LEFT,
+                    color=TEXT_COLOR,
+                    bg_color=BG_COLOR,
+                    margin=5,
+                )
             if self.plot_enabled:
                 self.plotter.draw(index=frame_index)
                 plot_img = self.plotter.get_image()
