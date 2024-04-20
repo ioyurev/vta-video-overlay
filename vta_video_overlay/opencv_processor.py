@@ -101,7 +101,7 @@ class CVProcessor(QtCore.QObject):
                 color=TEXT_COLOR,
                 bg_color=BG_COLOR,
                 margin=5,
-                scale=2.0,
+                scale=1.5,
             )
             frame.make_border(bottom=self.text_height)
             frame.put_text(
@@ -115,7 +115,7 @@ class CVProcessor(QtCore.QObject):
             )
             frame.make_border(bottom=self.text_height)
             frame.put_text(
-                text=self.additional_text,
+                text=config.additional_text,
                 x=5,
                 y=frame.size.height - 5,
                 align=Alignment.BOTTOM_LEFT,
@@ -141,9 +141,7 @@ class CVProcessor(QtCore.QObject):
         frame_width = int(self.video_input.get(3))
         frame_height = int(self.video_input.get(4))
         self.text_height = cv_get_text_size("").height * 2
-        self.additional_text_enabled = config.get_additional_text_enabled()
-        self.additional_text = config.get_additional_text()
-        add_height = self.text_height * (1 + self.additional_text_enabled)
+        add_height = self.text_height * (1 + int(config.additional_text_enabled))
         if self.crop_rect is not None:
             size = (self.crop_rect.w, self.crop_rect.h + add_height)
         else:

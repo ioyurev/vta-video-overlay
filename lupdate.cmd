@@ -2,6 +2,7 @@ pyside6-lupdate.exe ^
 assets\MainWindow.ui ^
 assets\CropSelectionWindow.ui ^
 vta_video_overlay\__main__.py ^
+vta_video_overlay\config.py ^
 vta_video_overlay\about_window.py ^
 vta_video_overlay\ffmpeg_utils.py ^
 vta_video_overlay\main_window.py ^
