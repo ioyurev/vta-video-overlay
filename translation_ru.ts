@@ -269,6 +269,14 @@ Exception occurred. See log.</source>
         <source>Cleaning {tempdir}</source>
         <translation>Очистка {tempdir}</translation>
     </message>
+    <message>
+        <source>Config file not found or corrupted. Creating new config file.</source>
+        <translation>Файл конфигурации не найден или поврежден. Создание нового файла конфигурации.</translation>
+    </message>
+    <message>
+        <source>Config loaded.</source>
+        <translation>Конфигурация загружена.</translation>
+    </message>
 </context>
 <context>
     <name>VideoData</name>
