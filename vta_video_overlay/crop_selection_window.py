@@ -68,4 +68,8 @@ class CropSelectionWindow(QtWidgets.QDialog, Ui_Dialog):
     def get_crop_rect(self):
         x, y = self.spinBox_x.value(), self.spinBox_y.value()
         w, h = self.spinBox_w.value(), self.spinBox_h.value()
-        return RectangleGeometry(*self.res_view2vid(x, y), *self.res_view2vid(w, h))
+        return RectangleGeometry(
+            *self.res_view2vid(x, y), *self.res_view2vid(w, h)
+        ).safe_bound(
+            max_width=self.video_resolution[0], max_height=self.video_resolution[1]
+        )

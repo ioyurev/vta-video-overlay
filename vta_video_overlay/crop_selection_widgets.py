@@ -10,6 +10,13 @@ class RectangleGeometry(NamedTuple):
     w: float
     h: float
 
+    def safe_bound(self, max_width: int, max_height: int):
+        x = max(0, self.x)
+        y = max(0, self.y)
+        w = min(max_width, self.w)
+        h = min(max_height, self.h)
+        return RectangleGeometry(x, y, w, h)
+
 
 class Rectangle(QtWidgets.QGraphicsRectItem, QtCore.QObject):
     def __init__(self, rec_x: float, rec_y: float, rec_w: float, rec_h: float):
