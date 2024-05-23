@@ -24,9 +24,8 @@ class CVProcessor(QtCore.QObject):
         progress_signal: QtCore.Signal,
         plot_enabled: bool,
         crop_rect: RectangleGeometry | None = None,
-        parent=None,
     ):
-        super().__init__(parent=parent)
+        super().__init__()
         self.video_data = video_data
         self.path_output = path_output
         self.path_input = video_data.path

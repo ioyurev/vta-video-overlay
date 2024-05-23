@@ -66,7 +66,6 @@ class Worker(QtCore.QThread):
             video_data=video_data,
             path_output=tmpfile2,
             progress_signal=self.progress,
-            parent=self,
             plot_enabled=self.plot_enabled,
             crop_rect=self.crop_rect,
         ).run(current_progress=progress, start_timestamp=self.start_timestamp)
