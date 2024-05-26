@@ -66,9 +66,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.video_preview.setScaledContents(True)
 
-        self.sel_win = CropSelectionWindow(parent=self)
-        self.sel_win.accepted.connect(self.crop_done)
-
     def crop_done(self):
         self.crop_rect = self.sel_win.get_crop_rect()
         log.info(self.tr("Crop done: {xywh}").format(xywh=self.crop_rect))
@@ -80,6 +77,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def crop(self):
         if self.edit_video.text() == "":
             return
+        self.sel_win = CropSelectionWindow(parent=self)
+        self.sel_win.accepted.connect(self.crop_done)
         self.sel_win.set_file(file=Path(self.edit_video.text()))
         self.sel_win.show()
 
