@@ -79,11 +79,15 @@ class CVProcessor(QtCore.QObject):
                     h=self.crop_rect.h,
                 )
             if self.temp_enabled:
-                value = self.video_data.temp_aligned[frame_index]
+                value_str = self.tmp_str_temp.format(
+                    temp=self.video_data.temp_aligned[frame_index]
+                )
             else:
-                value = self.video_data.emf_aligned[frame_index]
+                value_str = self.tmp_str_emf.format(
+                    emf=self.video_data.emf_aligned[frame_index]
+                )
             frame.put_text(
-                text=self.tmp_str_temp.format(temp=value),
+                text=value_str,
                 x=5,
                 y=5,
                 align=Alignment.TOP_LEFT,
