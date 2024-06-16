@@ -3,6 +3,7 @@ from typing import NamedTuple
 
 import cv2
 from PySide6 import QtGui
+from .crop_selection_widgets import RectangleGeometry
 
 
 class Alignment(Enum):
@@ -45,6 +46,9 @@ class Frame:
     def crop(self, x: int, y: int, w: int, h: int):
         self.image = self.image[y : y + h, x : x + w].copy()
         self._update_size()
+
+    def crop_by_rect(self, rect: RectangleGeometry):
+        self.crop(rect.x, rect.y, rect.w, rect.h)
 
     def make_border(
         self, top=0, bottom=0, left=0, right=0, color: tuple[int, int, int] = (0, 0, 0)

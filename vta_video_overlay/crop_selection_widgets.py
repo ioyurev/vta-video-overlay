@@ -5,10 +5,10 @@ from PySide6 import QtCore, QtGui, QtMultimedia, QtMultimediaWidgets, QtWidgets
 
 
 class RectangleGeometry(NamedTuple):
-    x: float
-    y: float
-    w: float
-    h: float
+    x: int
+    y: int
+    w: int
+    h: int
 
     def safe_bound(self, max_width: int, max_height: int):
         x = max(0, self.x)
@@ -37,7 +37,7 @@ class Rectangle(QtWidgets.QGraphicsRectItem, QtCore.QObject):
         x, y = p1.x(), p1.y()
         p2 = self.rect().bottomRight()
         w, h = p2.x() - x, p2.y() - y
-        return RectangleGeometry(x, y, w, h)
+        return RectangleGeometry(int(x), int(y), int(w), int(h))
 
     def setRect(self, x: float, y: float, w: float, h: float, move_points=False):
         super().setRect(x, y, w, h)

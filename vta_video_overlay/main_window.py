@@ -69,9 +69,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def crop_done(self):
         self.crop_rect = self.sel_win.get_crop_rect()
         log.info(self.tr("Crop done: {xywh}").format(xywh=self.crop_rect))
-        self.video_preview.setMinimumWidth(
-            int(self.crop_rect.w * self.video_preview.height() / self.crop_rect.h)
-        )
+        w = self.crop_rect.w * self.video_preview.height() // self.crop_rect.h
+        self.video_preview.setMinimumWidth(w)
 
     @QtCore.Slot()
     def crop(self):

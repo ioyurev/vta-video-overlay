@@ -72,12 +72,7 @@ class CVProcessor(QtCore.QObject):
 
             frame = Frame(frame)
             if self.crop_rect is not None:
-                frame.crop(
-                    x=self.crop_rect.x,
-                    y=self.crop_rect.y,
-                    w=self.crop_rect.w,
-                    h=self.crop_rect.h,
-                )
+                frame.crop_by_rect(self.crop_rect)
             if self.temp_enabled:
                 value = self.video_data.temp_aligned[frame_index]
             else:
