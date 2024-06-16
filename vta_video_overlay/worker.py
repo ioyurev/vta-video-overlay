@@ -1,6 +1,7 @@
 import os
 import shutil
 import tempfile
+import traceback
 from pathlib import Path
 
 from loguru import logger as log
@@ -56,7 +57,7 @@ class Worker(QtCore.QThread):
         cv.progress_signal.connect(self.progress.emit)
         cv.run(start_timestamp=self.start_timestamp)
         progress = 50
-        ff = FFmpeg()
+        ff = FFmpeg(parent=self)
         ff.signal.connect(self.progress.emit)
         ff.convert_video(
             path_input=tmpfile,
@@ -65,10 +66,12 @@ class Worker(QtCore.QThread):
         )
 
     def run(self):
-        # try:
-        self.do_work()
-        clean(tempdir=self.tempdir)
-        self.signal_finished.emit(ProcessResult(is_success=True))
-        # except Exception as e:
-        # self.signal_finished.emit(ProcessResult(is_success=False, exception=e))
-        # finally:
+        try:
+            self.do_work()
+            self.signal_finished.emit(ProcessResult(is_success=True))
+        except Exception:
+            self.signal_finished.emit(
+                ProcessResult(is_success=False, traceback_msg=traceback.format_exc())
+            )
+        finally:
+            clean(tempdir=self.tempdir)

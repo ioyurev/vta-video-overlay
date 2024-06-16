@@ -197,9 +197,23 @@ Temperature (C): {temp:.0f}</source>
         <translation>Обработка видео завершена</translation>
     </message>
     <message>
+        <source>Error</source>
+        <translation>Ошибка</translation>
+    </message>
+    <message>
+        <source>Video processing failed.
+Exception occurred.
+
+{tpl.traceback_msg}</source>
+        <translation>Не удалось обработать видео.
+Произошло исключение.
+
+{tpl.traceback_msg}</translation>
+    </message>
+    <message>
         <source>Video processing failed.
 Exception occurred. See log.</source>
-        <translation>Не удалось обработать видео.
+        <translation type="vanished">Не удалось обработать видео.
 Произошло исключение. См. журнал.</translation>
     </message>
     <message>

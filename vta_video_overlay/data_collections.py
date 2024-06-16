@@ -10,4 +10,4 @@ class ProcessProgress(NamedTuple):
 
 class ProcessResult(NamedTuple):
     is_success: bool
-    exception: Exception | None = None
+    traceback_msg: str | None = None

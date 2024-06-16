@@ -177,11 +177,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self, "VTA video overlay", self.tr("Video processing completed")
             )
         else:
-            log.exception(tpl.exception)
+            log.error(tpl.traceback_msg)
             QtWidgets.QMessageBox.critical(
                 self,
-                "Error",
-                self.tr("Video processing failed.\nException occurred. See log."),
+                self.tr("Error"),
+                self.tr(
+                    f"Video processing failed.\nException occurred.\n\n{tpl.traceback_msg}"
+                ),
             )
         self.set_stuff_enabled(True)
         self.progressbar.setValue(0)
