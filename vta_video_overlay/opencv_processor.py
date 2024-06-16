@@ -12,8 +12,8 @@ from .plotter import Plotter
 from .video_data import VideoData
 
 CODEC = "mp4v"
-TEXT_COLOR = (0, 255, 255)
-BG_COLOR = (63, 63, 63)
+TEXT_HEIGHT = cv_get_text_size("").height * 2
+TEXT_HEIGHT_2 = cv_get_text_size(text="", scale=2.0).height * 2
 
 
 class CVProcessor(QtCore.QObject):
@@ -73,59 +73,75 @@ class CVProcessor(QtCore.QObject):
             frame = Frame(frame)
             if self.crop_rect is not None:
                 frame.crop_by_rect(self.crop_rect)
-            if self.temp_enabled:
-                value = self.video_data.temp_aligned[frame_index]
-            else:
-                value = self.video_data.emf_aligned[frame_index]
+            # top left
             frame.put_text(
-                text=self.tmp_str_temp.format(temp=value),
+                text=self.tmp_str_time.format(
+                    time=self.video_data.timestamps[frame_index]
+                ),
                 x=5,
                 y=5,
                 align=Alignment.TOP_LEFT,
-                color=TEXT_COLOR,
-                bg_color=BG_COLOR,
                 margin=5,
                 scale=2.0,
             )
             frame.put_text(
-                text=self.str_sample,
+                text=self.tmp_str_emf.format(
+                    emf=self.video_data.emf_aligned[frame_index]
+                ),
                 x=5,
-                y=frame.size.height - 5,
-                align=Alignment.BOTTOM_LEFT,
-                color=TEXT_COLOR,
-                bg_color=BG_COLOR,
+                y=5 + TEXT_HEIGHT_2,
+                align=Alignment.TOP_LEFT,
                 margin=5,
-                scale=1.5,
+                scale=2.0,
             )
-            frame.make_border(bottom=self.text_height)
-            frame.put_text(
-                text=self.str_operator,
-                x=5,
-                y=frame.size.height - 5,
-                align=Alignment.BOTTOM_LEFT,
-                color=TEXT_COLOR,
-                bg_color=BG_COLOR,
-                margin=5,
-            )
-            frame.make_border(bottom=self.text_height)
+            if self.temp_enabled:
+                frame.put_text(
+                    text=self.tmp_str_temp.format(
+                        temp=self.video_data.temp_aligned[frame_index]
+                    ),
+                    x=5,
+                    y=5 + TEXT_HEIGHT_2 * 2,
+                    align=Alignment.TOP_LEFT,
+                    margin=5,
+                    scale=2.0,
+                )
+            # bottom left
             if config.additional_text_enabled:
                 frame.put_text(
                     text=config.additional_text,
                     x=5,
                     y=frame.size.height - 5,
                     align=Alignment.BOTTOM_LEFT,
-                    color=TEXT_COLOR,
-                    bg_color=BG_COLOR,
                     margin=5,
                 )
-            if self.plot_enabled:
-                self.plotter.draw(index=frame_index)
-                plot_img = self.plotter.get_image()
-                plot_img = cv2.cvtColor(plot_img, cv2.COLOR_RGB2BGR)
-                # paste img at right top corner
-                x = frame.shape[1] - plot_img.shape[1]
-                y = 0
-                cv_paste_image(img1=frame, img2=plot_img[:, :, :3], x=x, y=y)
+                sample_name_y = frame.size.height - 5 - TEXT_HEIGHT * 2
+                operator_y = frame.size.height - 5 - TEXT_HEIGHT
+            else:
+                sample_name_y = frame.size.height - 5 - TEXT_HEIGHT
+                operator_y = frame.size.height - 5
+            frame.put_text(
+                text=self.str_operator,
+                x=5,
+                y=operator_y,
+                align=Alignment.BOTTOM_LEFT,
+                margin=5,
+            )
+            frame.put_text(
+                text=self.str_sample,
+                x=5,
+                y=sample_name_y,
+                align=Alignment.BOTTOM_LEFT,
+                margin=5,
+                scale=1.5,
+            )
+            # if self.plot_enabled:
+            #     self.plotter.draw(index=frame_index)
+            #     plot_img = self.plotter.get_image()
+            #     plot_img = cv2.cvtColor(plot_img, cv2.COLOR_RGB2BGR)
+            #     # paste img at right top corner
+            #     x = frame.shape[1] - plot_img.shape[1]
+            #     y = 0
+            #     cv_paste_image(img1=frame, img2=plot_img[:, :, :3], x=x, y=y)
             self.video_output.write(frame.image)
             progress = current_progress + int((100 * frame_index / self.maxindex) // 3)
             self.progress_signal.emit(ProcessProgress(value=progress, frame=frame))
@@ -135,12 +151,11 @@ class CVProcessor(QtCore.QObject):
         self.video_input = cv2.VideoCapture(str(self.path_input))
         frame_width = int(self.video_input.get(3))
         frame_height = int(self.video_input.get(4))
-        self.text_height = cv_get_text_size("").height * 2
-        add_height = self.text_height * (1 + int(config.additional_text_enabled))
+        # add_height = TEXT_HEIGHT * (1 + int(config.additional_text_enabled))
         if self.crop_rect is not None:
-            size = (self.crop_rect.w, self.crop_rect.h + add_height)
+            size = (self.crop_rect.w, self.crop_rect.h)
         else:
-            size = (frame_width, frame_height + add_height)
+            size = (frame_width, frame_height)
         fps = self.video_input.get(cv2.CAP_PROP_FPS)
         log.info(self.tr("Video resolution: {size}").format(size=size))
         log.info(f"FPS: {fps}")

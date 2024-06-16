@@ -3,7 +3,16 @@ from typing import NamedTuple
 
 import cv2
 from PySide6 import QtGui
+
 from .crop_selection_widgets import RectangleGeometry
+
+
+class Painter:
+    text_color = (0, 255, 255)
+    bg_color = (63, 63, 63)
+
+
+painter = Painter()
 
 
 class Alignment(Enum):
@@ -70,8 +79,8 @@ class Frame:
         x: int,
         y: int,
         align: Alignment,
-        color: tuple[int, int, int] = (255, 255, 255),
-        bg_color: tuple[int, int, int] | None = None,
+        color: tuple[int, int, int] = painter.text_color,
+        bg_color: tuple[int, int, int] = painter.bg_color,
         margin=0,
         scale=Font.scale,
     ):
