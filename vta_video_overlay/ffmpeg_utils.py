@@ -23,6 +23,8 @@ def get_pts(packets) -> List[int]:
 
 
 class FFmpeg(QtCore.QObject):
+    signal = QtCore.Signal(ProcessProgress)
+
     def get_resolution(self, video_path: Path | str) -> tuple[int, int]:
         probe = ffmpeg.probe(video_path)
         video_stream = next(
@@ -63,6 +65,8 @@ class FFmpeg(QtCore.QObject):
         process = subprocess.Popen(
             [
                 "ffprobe",
+                "-fflags",
+                "+genpts",
                 "-v",
                 "error",
                 "-select_streams",
@@ -89,7 +93,6 @@ class FFmpeg(QtCore.QObject):
         self,
         path_input: Path,
         path_output: Path,
-        signal: QtCore.Signal,
         current_progress: int,
     ):
         cmd = ["ffmpeg", "-i", str(path_input), str(path_output)]
@@ -98,10 +101,9 @@ class FFmpeg(QtCore.QObject):
         log.info(self.tr("Saving to: {path}").format(path=path_output))
         for ff_progress in ff.run_command_with_progress():
             val = int(round(ff_progress))
-            progress = current_progress + val // 3
-            signal.emit(ProcessProgress(value=progress))
+            progress = current_progress + val // 2
+            self.signal.emit(ProcessProgress(value=progress))
         log.info(self.tr("ffmpeg conversion finished."))
-        return progress
 
     def check_for_packets(self, video_path: Path) -> bool:
         try:
