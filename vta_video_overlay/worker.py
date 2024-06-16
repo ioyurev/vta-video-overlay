@@ -77,10 +77,10 @@ class Worker(QtCore.QThread):
         )
 
     def run(self):
-        try:
-            self.do_work()
-            self.signal_finished.emit(ProcessResult(is_success=True))
-        except Exception as e:
-            self.signal_finished.emit(ProcessResult(is_success=False, exception=e))
-        finally:
-            clean(tempdir=self.tempdir)
+        # try:
+        self.do_work()
+        clean(tempdir=self.tempdir)
+        self.signal_finished.emit(ProcessResult(is_success=True))
+        # except Exception as e:
+        # self.signal_finished.emit(ProcessResult(is_success=False, exception=e))
+        # finally:
