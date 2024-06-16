@@ -1,9 +1,11 @@
-from .tda_file import Data
-from .ffmpeg_utils import FFmpeg
-from PySide6 import QtCore
 from pathlib import Path
+
 import numpy as np
 from loguru import logger as log
+from PySide6 import QtCore
+
+from .ffmpeg_utils import FFmpeg
+from .tda_file import Data
 
 
 class VideoData(QtCore.QObject):
@@ -23,7 +25,8 @@ class VideoData(QtCore.QObject):
         self.emf_aligned = np.interp(
             self.timestamps, self.data.data_time, self.data.data_emf
         )
-        self.temp_aligned = np.interp(
-            self.timestamps, self.data.data_time, self.data.data_temp
-        )
+        if self.temp_enabled:
+            self.temp_aligned = np.interp(
+                self.timestamps, self.data.data_time, self.data.data_temp
+            )
         self.dE_per_dt = np.gradient(self.emf_aligned, self.timestamps)
