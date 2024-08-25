@@ -45,23 +45,35 @@ class Worker(QtCore.QThread):
 
     def do_work(self):
         self.tempdir = Path(tempfile.mkdtemp())
-        tmpfile = Path(self.tempdir / "opencv_output.mp4")
-        video_data = VideoData(video_path=self.video_file_path_input, data=self.data)
+        tmpfile1 = Path(self.tempdir / "out1.mp4")
+        tmpfile2 = Path(self.tempdir / "out2.mp4")
 
-        cv = CVProcessor(
+        if FFmpeg().check_for_packets(video_path=self.video_file_path_input):
+            file_to_overlay = self.video_file_path_input
+            progress = 34
+        else:
+            file_to_overlay = tmpfile1
+            log.warning("Input video has no timestamps. Preconverting video...")
+            progress = FFmpeg().convert_video(
+                path_input=self.video_file_path_input,
+                path_output=file_to_overlay,
+                signal=self.progress,
+                current_progress=1,
+            )
+
+        video_data = VideoData(video_path=file_to_overlay, data=self.data)
+
+        progress = CVProcessor(
             video_data=video_data,
-            path_output=tmpfile,
+            path_output=tmpfile2,
+            progress_signal=self.progress,
             plot_enabled=self.plot_enabled,
             crop_rect=self.crop_rect,
-        )
-        cv.progress_signal.connect(self.progress.emit)
-        cv.run(start_timestamp=self.start_timestamp)
-        progress = 50
-        ff = FFmpeg(parent=self)
-        ff.signal.connect(self.progress.emit)
-        ff.convert_video(
-            path_input=tmpfile,
+        ).run(current_progress=progress, start_timestamp=self.start_timestamp)
+        FFmpeg().convert_video(
+            path_input=tmpfile2,
             path_output=self.video_file_path_output,
+            signal=self.progress,
             current_progress=progress,
         )
 

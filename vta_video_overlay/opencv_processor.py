@@ -17,12 +17,11 @@ TEXT_HEIGHT_2 = cv_get_text_size(text="", scale=2.0).height * 2
 
 
 class CVProcessor(QtCore.QObject):
-    progress_signal = QtCore.Signal(ProcessProgress)
-
     def __init__(
         self,
         video_data: VideoData,
         path_output: Path,
+        progress_signal: QtCore.Signal,
         plot_enabled: bool,
         crop_rect: RectangleGeometry | None = None,
     ):
@@ -31,6 +30,7 @@ class CVProcessor(QtCore.QObject):
         self.path_output = path_output
         self.path_input = video_data.path
         self.temp_enabled = video_data.temp_enabled
+        self.progress_signal = progress_signal
         self.plot_enabled = plot_enabled
         self.crop_rect = crop_rect
         self.video_data.prepare()
@@ -49,7 +49,7 @@ class CVProcessor(QtCore.QObject):
         self.tmp_str_emf = self.tr("E(mV): {emf:.2f}")
         self.tmp_str_temp = "T(C): {temp:.0f}"
 
-    def loop(self, start_timestamp: float):
+    def loop(self, current_progress: int, start_timestamp: float):
         self.video_input.set(cv2.CAP_PROP_POS_MSEC, start_timestamp * 1000)
         first_frame_index = int(self.video_input.get(cv2.CAP_PROP_POS_FRAMES))
         log.info(
@@ -143,10 +143,11 @@ class CVProcessor(QtCore.QObject):
             #     y = 0
             #     cv_paste_image(img1=frame, img2=plot_img[:, :, :3], x=x, y=y)
             self.video_output.write(frame.image)
-            progress = int((100 * frame_index / self.maxindex) // 2)
+            progress = current_progress + int((100 * frame_index / self.maxindex) // 3)
             self.progress_signal.emit(ProcessProgress(value=progress, frame=frame))
+        return progress
 
-    def run(self, start_timestamp: float):
+    def run(self, current_progress: int, start_timestamp: float):
         self.video_input = cv2.VideoCapture(str(self.path_input))
         frame_width = int(self.video_input.get(3))
         frame_height = int(self.video_input.get(4))
@@ -164,10 +165,13 @@ class CVProcessor(QtCore.QObject):
             fps=fps,
             frameSize=size,
         )
-        self.loop(start_timestamp=start_timestamp)
+        progress = self.loop(
+            current_progress=current_progress, start_timestamp=start_timestamp
+        )
         self.video_input.release()
         self.video_output.release()
         log.info(self.tr("OpenCV has finished"))
+        return progress
 
 
 def cv_paste_image(
