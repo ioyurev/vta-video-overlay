@@ -1,7 +1,8 @@
-import pandas as pd
-import numpy as np
-from pathlib import Path
 from io import StringIO
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
 from loguru import logger as log
 from PySide6 import QtCore
 
@@ -35,7 +36,7 @@ class Data(QtCore.QObject):
     sample: str
     coeff: list[str]
 
-    def __init__(self, path: Path, temp_enabled: bool) -> None:
+    def __init__(self, path: Path, temp_enabled=True) -> None:
         super().__init__()
         with open(file=path, mode="r", encoding="cp1251") as f:
             lines_raw = f.readlines()

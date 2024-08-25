@@ -22,17 +22,17 @@ def clean(tempdir: str):
 
 
 class Worker(QtCore.QThread):
-    progress = QtCore.Signal(ProcessProgress)
-    signal_finished = QtCore.Signal(ProcessResult)
+    stage_progress = QtCore.Signal(ProcessProgress)
+    stage_finished = QtCore.Signal(tuple)
+    work_finished = QtCore.Signal(ProcessResult)
 
     def __init__(
         self,
-        parent,
         video_file_path_input: Path,
         video_file_path_output: Path,
         data: Data,
-        start_timestamp: float,
-        plot_enabled: bool,
+        start_timestamp=0.0,
+        parent=None,
         crop_rect: RectangleGeometry | None = None,
     ):
         super().__init__(parent=parent)
@@ -40,7 +40,6 @@ class Worker(QtCore.QThread):
         self.video_file_path_output = video_file_path_output
         self.data = data
         self.start_timestamp = start_timestamp
-        self.plot_enabled = plot_enabled
         self.crop_rect = crop_rect
 
     def do_work(self):
@@ -50,39 +49,39 @@ class Worker(QtCore.QThread):
 
         if FFmpeg().check_for_packets(video_path=self.video_file_path_input):
             file_to_overlay = self.video_file_path_input
-            progress = 34
+            self.stage_progress.emit(ProcessProgress(value=100.0, frame=None))
         else:
             file_to_overlay = tmpfile1
             log.warning("Input video has no timestamps. Preconverting video...")
-            progress = FFmpeg().convert_video(
+            FFmpeg().convert_video(
                 path_input=self.video_file_path_input,
                 path_output=file_to_overlay,
-                signal=self.progress,
-                current_progress=1,
+                signal=self.stage_progress,
             )
 
         video_data = VideoData(video_path=file_to_overlay, data=self.data)
+        self.stage_finished.emit((len(video_data.timestamps) - 1, "2/3", "frame"))
 
-        progress = CVProcessor(
+        CVProcessor(
             video_data=video_data,
             path_output=tmpfile2,
-            progress_signal=self.progress,
-            plot_enabled=self.plot_enabled,
+            progress_signal=self.stage_progress,
             crop_rect=self.crop_rect,
-        ).run(current_progress=progress, start_timestamp=self.start_timestamp)
+        ).run(start_timestamp=self.start_timestamp)
+        self.stage_finished.emit((100.0, "3/3", "%"))
+
         FFmpeg().convert_video(
             path_input=tmpfile2,
             path_output=self.video_file_path_output,
-            signal=self.progress,
-            current_progress=progress,
+            signal=self.stage_progress,
         )
 
     def run(self):
         try:
             self.do_work()
-            self.signal_finished.emit(ProcessResult(is_success=True))
+            self.work_finished.emit(ProcessResult(is_success=True))
         except Exception:
-            self.signal_finished.emit(
+            self.work_finished.emit(
                 ProcessResult(is_success=False, traceback_msg=traceback.format_exc())
             )
         finally:

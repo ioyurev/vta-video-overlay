@@ -143,7 +143,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.cb_temp.setEnabled(val)
         self.cb_trim.setEnabled(val)
         self.cb_excel.setEnabled(val)
-        self.cb_plot.setEnabled(val)
+        # self.cb_plot.setEnabled(val)
         self.sb_trim.setEnabled(val)
 
     def data_to_gui(self):
@@ -194,6 +194,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.video_preview.setPixmap(tpl.frame.to_pixmap())
         self.progressbar.setValue(tpl.value)
 
+    def stage_finished(self, tpl):
+        total, stage_str, unit = tpl
+        self.progressbar.setValue(0)
+        self.progressbar.setMaximum(total)
+
     @QtCore.Slot()
     def overlay(self):
         path_str = pick_path_save()
@@ -215,18 +220,19 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         log.info(
             self.tr("Polynomial coefficients: {coeff}").format(coeff=self.data.coeff)
         )
-        log.info(f"Plot enabled: {self.cb_plot.isChecked()}")
+        # log.info(f"Plot enabled: {self.cb_plot.isChecked()}")
         w = Worker(
             parent=self,
             video_file_path_input=Path(self.edit_video.text()),
             video_file_path_output=savepath,
             data=self.data,
             start_timestamp=start_timestamp,
-            plot_enabled=self.cb_plot.isChecked(),
+            # plot_enabled=self.cb_plot.isChecked(),
             crop_rect=self.crop_rect,
         )
-        w.progress.connect(self.update_progressbar)
-        w.signal_finished.connect(self.finished)
+        w.stage_progress.connect(self.update_progressbar)
+        w.stage_finished.connect(self.stage_finished)
+        w.work_finished.connect(self.finished)
         if self.cb_excel.isChecked():
             excelpath = Path(self.edit_tda.text()).with_suffix(".xlsx")
             self.data.to_excel(excelpath)

@@ -8,7 +8,6 @@ from .config import config
 from .crop_selection_widgets import RectangleGeometry
 from .data_collections import ProcessProgress
 from .opencv_frame import Alignment, Frame, cv_get_text_size
-from .plotter import Plotter
 from .video_data import VideoData
 
 CODEC = "mp4v"
@@ -22,7 +21,6 @@ class CVProcessor(QtCore.QObject):
         video_data: VideoData,
         path_output: Path,
         progress_signal: QtCore.Signal,
-        plot_enabled: bool,
         crop_rect: RectangleGeometry | None = None,
     ):
         super().__init__()
@@ -31,11 +29,7 @@ class CVProcessor(QtCore.QObject):
         self.path_input = video_data.path
         self.temp_enabled = video_data.temp_enabled
         self.progress_signal = progress_signal
-        self.plot_enabled = plot_enabled
         self.crop_rect = crop_rect
-        self.video_data.prepare()
-        if self.plot_enabled:
-            self.plotter = Plotter(video_data=self.video_data)
         self.maxindex = len(self.video_data.timestamps) - 1
 
     def make_text_templates(self):
@@ -49,7 +43,7 @@ class CVProcessor(QtCore.QObject):
         self.tmp_str_emf = self.tr("E(mV): {emf:.2f}")
         self.tmp_str_temp = "T(C): {temp:.0f}"
 
-    def loop(self, current_progress: int, start_timestamp: float):
+    def loop(self, start_timestamp: float):
         self.video_input.set(cv2.CAP_PROP_POS_MSEC, start_timestamp * 1000)
         first_frame_index = int(self.video_input.get(cv2.CAP_PROP_POS_FRAMES))
         log.info(
@@ -143,11 +137,9 @@ class CVProcessor(QtCore.QObject):
             #     y = 0
             #     cv_paste_image(img1=frame, img2=plot_img[:, :, :3], x=x, y=y)
             self.video_output.write(frame.image)
-            progress = current_progress + int((100 * frame_index / self.maxindex) // 3)
-            self.progress_signal.emit(ProcessProgress(value=progress, frame=frame))
-        return progress
+            self.progress_signal.emit(ProcessProgress(value=frame_index, frame=frame))
 
-    def run(self, current_progress: int, start_timestamp: float):
+    def run(self, start_timestamp: float):
         self.video_input = cv2.VideoCapture(str(self.path_input))
         frame_width = int(self.video_input.get(3))
         frame_height = int(self.video_input.get(4))
@@ -165,13 +157,10 @@ class CVProcessor(QtCore.QObject):
             fps=fps,
             frameSize=size,
         )
-        progress = self.loop(
-            current_progress=current_progress, start_timestamp=start_timestamp
-        )
+        self.loop(start_timestamp=start_timestamp)
         self.video_input.release()
         self.video_output.release()
         log.info(self.tr("OpenCV has finished"))
-        return progress
 
 
 def cv_paste_image(

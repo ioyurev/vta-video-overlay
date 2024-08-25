@@ -16,8 +16,6 @@ class VideoData(QtCore.QObject):
         self.sample = data.sample
         self.path = video_path
         self.temp_enabled = data.temp_enabled
-
-    def prepare(self):
         self.timestamps = np.array(FFmpeg().get_timestamps(self.path)) / 1000
         log.info(
             self.tr("Number of video frames: {len}").format(len=len(self.timestamps))
