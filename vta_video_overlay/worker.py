@@ -62,12 +62,13 @@ class Worker(QtCore.QThread):
         video_data = VideoData(video_path=file_to_overlay, data=self.data)
         self.stage_finished.emit((len(video_data.timestamps) - 1, "2/3", "frame"))
 
-        CVProcessor(
+        cv_agent = CVProcessor(
             video_data=video_data,
             path_output=tmpfile2,
-            progress_signal=self.stage_progress,
             crop_rect=self.crop_rect,
-        ).run(start_timestamp=self.start_timestamp)
+        )
+        cv_agent.progress_signal.connect(self.stage_progress.emit)
+        cv_agent.run(start_timestamp=self.start_timestamp)
         self.stage_finished.emit((100.0, "3/3", "%"))
 
         FFmpeg().convert_video(

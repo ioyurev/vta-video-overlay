@@ -16,11 +16,12 @@ TEXT_HEIGHT_2 = cv_get_text_size(text="", scale=2.0).height * 2
 
 
 class CVProcessor(QtCore.QObject):
+    progress_signal = QtCore.Signal(ProcessProgress)
+
     def __init__(
         self,
         video_data: VideoData,
         path_output: Path,
-        progress_signal: QtCore.Signal,
         crop_rect: RectangleGeometry | None = None,
     ):
         super().__init__()
@@ -28,7 +29,6 @@ class CVProcessor(QtCore.QObject):
         self.path_output = path_output
         self.path_input = video_data.path
         self.temp_enabled = video_data.temp_enabled
-        self.progress_signal = progress_signal
         self.crop_rect = crop_rect
         self.maxindex = len(self.video_data.timestamps) - 1
 
