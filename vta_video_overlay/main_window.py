@@ -14,6 +14,7 @@ from .ffmpeg_utils import FFmpeg
 from .tda_file import Data
 from .ui.MainWindow import Ui_MainWindow
 from .worker import Worker
+from .config import appdata_path
 
 
 def open_file_explorer(path: Path):
@@ -40,7 +41,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     data: Data
     crop_rect: RectangleGeometry | None = None
 
-    def __init__(self, appdata_path: Path):
+    def __init__(self):
         super().__init__()
         self.setupUi(self)
         self.btn_tda.clicked.connect(self.pick_tda)
@@ -56,7 +57,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.menubar.addAction(self.actionAbout)
 
         self.explorer_action = QtGui.QAction(self.tr("Open logs folder"), self)
-        self.explorer_action.triggered.connect(lambda: open_file_explorer(appdata_path))
+        self.explorer_action.triggered.connect(lambda: open_file_explorer(appdata_path / 'logs'))
         self.menubar.addAction(self.explorer_action)
 
         self.crop_action = QtGui.QAction(self.tr("Crop"), self)

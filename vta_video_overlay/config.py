@@ -1,16 +1,44 @@
 import configparser
-
+import sys
+import os
 from loguru import logger as log
 from PySide6 import QtCore
+from pathlib import Path
+import cv2
 
-DEFAULT_CONFIG = {"Overlay": {"additional_text": "", "additional_text_enabled": False}}
+DEFAULT_CONFIG = {"Overlay": {
+    "additional_text": " ",
+    "additional_text_enabled": False,
+    "logo_enabled": True,
+    }}
 
+
+def set_appdata_folder():
+    app_folder = "vta_video_overlay"
+    if sys.platform.startswith("linux"):
+        appdata_folder = os.environ.get(
+            "XDG_DATA_HOME", os.path.expanduser("~/.local/share")
+        )
+    else:
+        appdata_folder = os.getenv("APPDATA")
+    appdata_path = Path(os.path.join(appdata_folder, app_folder))
+    if not os.path.exists(appdata_path):
+        os.makedirs(appdata_path)
+    return Path(appdata_path)
+
+
+def setup_logging(appdata_path: Path):
+    log_file_path = appdata_path / "logs/{time}.log"
+    log.add(log_file_path)
 
 class Config:
-    def read_config(self, path):
+    def __init__(self, path: Path):
         self.path = path
+        self.read_config()
+
+    def read_config(self):
         self.config = configparser.ConfigParser()
-        if not self.config.read(path, encoding="utf-8"):
+        if not self.config.read(self.path, encoding="utf-8"):
             log.warning(
                 QtCore.QCoreApplication.tr(
                     "Config file not found or corrupted. Creating new config file."
@@ -19,6 +47,15 @@ class Config:
             self.config.read_dict(DEFAULT_CONFIG)
             self.write_config()
 
+        self.logo_enabled = self.config["Overlay"].getboolean(
+            "logo_enabled"
+        )
+        if self.logo_enabled:
+            try:
+                self.logo_img = cv2.imread("logo.png")
+            except Exception as e:
+                log.error(f'Failed to load logo file: {e}')
+                self.logo_enabled = False
         self.additional_text_enabled = self.config["Overlay"].getboolean(
             "additional_text_enabled"
         )
@@ -26,6 +63,7 @@ class Config:
         log.info(QtCore.QCoreApplication.tr("Config loaded."))
         log.info(f"additional_text_enabled: {self.additional_text_enabled}")
         log.info(f"additional_text: {self.additional_text}")
+        log.info(f"logo_enabled: {self.logo_enabled}")
 
     def write_config(self):
         try:
@@ -34,5 +72,6 @@ class Config:
         except Exception as e:
             log.exception(e)
 
-
-config = Config()
+appdata_path = set_appdata_folder()
+setup_logging(appdata_path=appdata_path)
+config = Config(path=appdata_path)
