@@ -4,15 +4,13 @@ import cv2
 from loguru import logger as log
 from PySide6 import QtCore
 
-from .config import config
-from .crop_selection_widgets import RectangleGeometry
-from .data_collections import ProcessProgress
-from .opencv_frame import Alignment, Frame, cv_get_text_size
-from .video_data import VideoData
+from vta_video_overlay.config import config
+from vta_video_overlay.crop_selection_widgets import RectangleGeometry
+from vta_video_overlay.data_collections import ProcessProgress
+from vta_video_overlay.opencv_frame import Alignment, CVFrame
+from vta_video_overlay.video_data import VideoData
 
 CODEC = "mp4v"
-TEXT_HEIGHT = cv_get_text_size("").height * 2
-TEXT_HEIGHT_2 = cv_get_text_size(text="", scale=2.0).height * 2
 
 
 class CVProcessor(QtCore.QObject):
@@ -32,17 +30,6 @@ class CVProcessor(QtCore.QObject):
         self.crop_rect = crop_rect
         self.maxindex = len(self.video_data.timestamps) - 1
 
-    def make_text_templates(self):
-        self.str_operator = self.tr("Operator: {operator}").format(
-            operator=self.video_data.operator
-        )
-        self.str_sample = self.tr("Sample: {sample}").format(
-            sample=self.video_data.sample
-        )
-        self.tmp_str_time = self.tr("t(s): {time:.1f}")
-        self.tmp_str_emf = self.tr("E(mV): {emf:.2f}")
-        self.tmp_str_temp = "T(C): {temp:.0f}"
-
     def loop(self, start_timestamp: float):
         self.video_input.set(cv2.CAP_PROP_POS_MSEC, start_timestamp * 1000)
         first_frame_index = int(self.video_input.get(cv2.CAP_PROP_POS_FRAMES))
@@ -51,10 +38,9 @@ class CVProcessor(QtCore.QObject):
                 timestamp=start_timestamp, i=first_frame_index
             )
         )
-        self.make_text_templates()
         ret = True
         while ret:
-            ret, frame = self.video_input.read()
+            ret, img = self.video_input.read()
             if not ret:
                 break
             frame_index = int(self.video_input.get(cv2.CAP_PROP_POS_FRAMES)) - 1
@@ -64,78 +50,29 @@ class CVProcessor(QtCore.QObject):
             if timestamp < start_timestamp:
                 continue
 
-            frame = Frame(frame)
-            if self.crop_rect is not None:
-                frame.crop_by_rect(self.crop_rect)
-            # top left
-            frame.put_text(
-                text=self.tmp_str_time.format(
-                    time=self.video_data.timestamps[frame_index]
-                ),
-                x=5,
-                y=5,
-                align=Alignment.TOP_LEFT,
-                margin=5,
-                scale=2.0,
-            )
-            frame.put_text(
-                text=self.tmp_str_emf.format(
-                    emf=self.video_data.emf_aligned[frame_index]
-                ),
-                x=5,
-                y=5 + TEXT_HEIGHT_2,
-                align=Alignment.TOP_LEFT,
-                margin=5,
-                scale=2.0,
-            )
             if self.temp_enabled:
-                frame.put_text(
-                    text=self.tmp_str_temp.format(
-                        temp=self.video_data.temp_aligned[frame_index]
-                    ),
-                    x=5,
-                    y=5 + TEXT_HEIGHT_2 * 2,
-                    align=Alignment.TOP_LEFT,
-                    margin=5,
-                    scale=2.0,
-                )
-            # bottom left
-            if config.additional_text_enabled:
-                frame.put_text(
-                    text=config.additional_text,
-                    x=5,
-                    y=frame.size.height - 5,
-                    align=Alignment.BOTTOM_LEFT,
-                    margin=5,
-                )
-                sample_name_y = frame.size.height - 5 - TEXT_HEIGHT * 2
-                operator_y = frame.size.height - 5 - TEXT_HEIGHT
+                temp = self.video_data.temp_aligned[frame_index]
             else:
-                sample_name_y = frame.size.height - 5 - TEXT_HEIGHT
-                operator_y = frame.size.height - 5
-            frame.put_text(
-                text=self.str_operator,
-                x=5,
-                y=operator_y,
-                align=Alignment.BOTTOM_LEFT,
-                margin=5,
+                temp = None
+            if config.additional_text_enabled:
+                add_text = config.additional_text
+            else:
+                add_text = None
+
+            frame = make_frame(
+                img=img,
+                crop_rect=self.crop_rect,
+                time=self.video_data.timestamps[frame_index],
+                emf=self.video_data.emf_aligned[frame_index],
+                temp=temp,
+                operator_name=self.tr("Operator: {operator}").format(
+                    operator=self.video_data.operator
+                ),
+                sample_name=self.tr("Sample: {sample}").format(
+                    sample=self.video_data.sample
+                ),
+                add_text=add_text,
             )
-            frame.put_text(
-                text=self.str_sample,
-                x=5,
-                y=sample_name_y,
-                align=Alignment.BOTTOM_LEFT,
-                margin=5,
-                scale=1.5,
-            )
-            # if self.plot_enabled:
-            #     self.plotter.draw(index=frame_index)
-            #     plot_img = self.plotter.get_image()
-            #     plot_img = cv2.cvtColor(plot_img, cv2.COLOR_RGB2BGR)
-            #     # paste img at right top corner
-            #     x = frame.shape[1] - plot_img.shape[1]
-            #     y = 0
-            #     cv_paste_image(img1=frame, img2=plot_img[:, :, :3], x=x, y=y)
             self.video_output.write(frame.image)
             self.progress_signal.emit(ProcessProgress(value=frame_index, frame=frame))
 
@@ -163,20 +100,60 @@ class CVProcessor(QtCore.QObject):
         log.info(self.tr("OpenCV has finished"))
 
 
-def cv_paste_image(
-    img1: cv2.typing.MatLike, img2: cv2.typing.MatLike, x: int = 0, y: int = 0
+def make_frame(
+    img: cv2.typing.MatLike,
+    crop_rect: RectangleGeometry | None,
+    time: float,
+    emf: float,
+    temp: float | None,
+    operator_name: str,
+    sample_name: str,
+    add_text: str | None,
 ):
-    """
-    Paste img2 onto img1 at the specified location.
-    """
-    # Get the dimensions of img2
-    height, width, _ = img2.shape
-
-    # Create a region of interest (ROI) on img1
-    roi = img1[y : y + height, x : x + width]
-
-    # Make the ROI black
-    roi[:] = (0, 0, 0)
-
-    # Add img2 to the ROI
-    roi[:, :, :3] = img2
+    cvframe = CVFrame(image=img)
+    if crop_rect is not None:
+        cvframe.crop_by_rect(crop_rect)
+    if config.logo_enabled:
+        cvframe.put_img(
+            overlay_img=config.logo_img,
+            x=cvframe.image.shape[1],
+            y=cvframe.image.shape[0],
+            align=Alignment.BOTTOM_RIGHT,
+        )
+    pilframe = cvframe.to_pilframe()
+    bbox = pilframe.put_text(
+        text=QtCore.QCoreApplication.tr("t(s): {time:.1f}").format(time=time),
+        xy=(5, 5),
+        align=Alignment.TOP_LEFT,
+    )
+    bbox = pilframe.put_text(
+        text=QtCore.QCoreApplication.tr("E(mV): {emf:.2f}").format(emf=emf),
+        xy=(5, 10 + bbox[3]),
+        align=Alignment.TOP_LEFT,
+    )
+    if temp is not None:
+        pilframe.put_text(
+            text=f"T(°C): {temp:.0f}",
+            xy=(5, 10 + bbox[3]),
+            align=Alignment.TOP_LEFT,
+        )
+    if config.additional_text_enabled:
+        bbox = pilframe.put_text(
+            text=add_text,
+            xy=(5, cvframe.size.height - 5),
+            align=Alignment.BOTTOM_LEFT,
+            small=True,
+        )
+        xy = (5, bbox[1] - 10)
+    else:
+        xy = (5, cvframe.size.height - 5)
+    bbox = pilframe.put_text(
+        text=operator_name, xy=xy, align=Alignment.BOTTOM_LEFT, small=True
+    )
+    bbox = pilframe.put_text(
+        text=sample_name,
+        xy=(5, bbox[1] - 10),
+        align=Alignment.BOTTOM_LEFT,
+    )
+    cvframe = CVFrame.from_pilframe(frame=pilframe)
+    return cvframe

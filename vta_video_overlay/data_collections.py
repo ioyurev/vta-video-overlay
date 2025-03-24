@@ -1,11 +1,11 @@
 from typing import NamedTuple
 
-from .opencv_frame import Frame
+from .opencv_frame import CVFrame
 
 
 class ProcessProgress(NamedTuple):
     value: int
-    frame: Frame | None = None
+    frame: CVFrame | None = None
 
 
 class ProcessResult(NamedTuple):

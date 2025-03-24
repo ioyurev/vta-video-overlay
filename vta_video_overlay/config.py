@@ -1,16 +1,22 @@
 import configparser
-import sys
 import os
+import sys
+from pathlib import Path
+
+import cv2
 from loguru import logger as log
 from PySide6 import QtCore
-from pathlib import Path
-import cv2
 
-DEFAULT_CONFIG = {"Overlay": {
-    "additional_text": " ",
-    "additional_text_enabled": False,
-    "logo_enabled": True,
-    }}
+DEFAULT_CONFIG = {
+    "Overlay": {
+        "additional_text": " ",
+        "additional_text_enabled": False,
+        "logo_enabled": True,
+    }
+}
+
+text_color = (0, 255, 255)
+bg_color = (63, 63, 63)
 
 
 def set_appdata_folder():
@@ -31,6 +37,7 @@ def setup_logging(appdata_path: Path):
     log_file_path = appdata_path / "logs/{time}.log"
     log.add(log_file_path)
 
+
 class Config:
     def __init__(self, path: Path):
         self.path = path
@@ -47,14 +54,12 @@ class Config:
             self.config.read_dict(DEFAULT_CONFIG)
             self.write_config()
 
-        self.logo_enabled = self.config["Overlay"].getboolean(
-            "logo_enabled"
-        )
+        self.logo_enabled = self.config["Overlay"].getboolean("logo_enabled")
         if self.logo_enabled:
             try:
                 self.logo_img = cv2.imread("logo.png")
             except Exception as e:
-                log.error(f'Failed to load logo file: {e}')
+                log.error(f"Failed to load logo file: {e}")
                 self.logo_enabled = False
         self.additional_text_enabled = self.config["Overlay"].getboolean(
             "additional_text_enabled"
@@ -71,6 +76,7 @@ class Config:
                 self.config.write(configfile)
         except Exception as e:
             log.exception(e)
+
 
 appdata_path = set_appdata_folder()
 setup_logging(appdata_path=appdata_path)
