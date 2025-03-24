@@ -28,8 +28,11 @@ class Config:
         log.info(f"additional_text: {self.additional_text}")
 
     def write_config(self):
-        with open(self.path, "w") as configfile:
-            self.config.write(configfile)
+        try:
+            with open(self.path, "w") as configfile:
+                self.config.write(configfile)
+        except Exception as e:
+            log.exception(e)
 
 
 config = Config()

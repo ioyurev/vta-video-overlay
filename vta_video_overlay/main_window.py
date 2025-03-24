@@ -189,10 +189,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.progressbar.setValue(0)
 
     @QtCore.Slot(ProcessProgress)
-    def update_progressbar(self, tpl: ProcessProgress):
-        if tpl.frame is not None:
-            self.video_preview.setPixmap(tpl.frame.to_pixmap())
-        self.progressbar.setValue(tpl.value)
+    def update_progressbar(self, progress: ProcessProgress):
+        if progress.frame is not None:
+            try:
+                self.video_preview.setPixmap(progress.frame.to_pixmap())
+            except Exception as e:
+                log.exception(e)
+        self.progressbar.setValue(progress.value)
 
     def stage_finished(self, tpl):
         total, stage_str, unit = tpl
