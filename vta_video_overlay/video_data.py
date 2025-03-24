@@ -27,4 +27,3 @@ class VideoData(QtCore.QObject):
             self.temp_aligned = np.interp(
                 self.timestamps, self.data.data_time, self.data.data_temp
             )
-        self.dE_per_dt = np.gradient(self.emf_aligned, self.timestamps)

@@ -28,7 +28,6 @@ class CVProcessor(QtCore.QObject):
         self.path_input = video_data.path
         self.temp_enabled = video_data.temp_enabled
         self.crop_rect = crop_rect
-        self.maxindex = len(self.video_data.timestamps) - 1
 
     def loop(self, start_timestamp: float):
         self.video_input.set(cv2.CAP_PROP_POS_MSEC, start_timestamp * 1000)
