@@ -74,9 +74,15 @@ class CVProcessor(QtCore.QObject):
             )
         )
         ret = True
+        frame_index = 0
         while ret:
             ret, img = self.video_input.read()
             if not ret:
+                log.warning(
+                    self.tr("Frame read failed | Frame: {} | Pos: {:.1f}s"),
+                    frame_index,
+                    self.video_input.get(cv2.CAP_PROP_POS_MSEC) / 1000,
+                )
                 break
             frame_index = int(self.video_input.get(cv2.CAP_PROP_POS_FRAMES)) - 1
             if frame_index < 0:

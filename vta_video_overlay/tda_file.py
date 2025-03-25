@@ -89,6 +89,8 @@ class Data(QtCore.QObject):
             decimal=",",
             names=[Headers.EMF, Headers.TIME_RAW],
         )
+        # VPTAnalyzer stores time values in... days? Therefore, the time value
+        # is multiplied by 86,400 to convert it to seconds (24h * 60m * 60s = 86,400 seconds/day)
         df[Headers.TIME] = df[Headers.TIME_RAW] * 86400
         for index, item in enumerate(self.coeff):
             self.coeff[index] = item.replace(",", ".")

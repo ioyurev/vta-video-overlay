@@ -85,7 +85,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.menubar.addAction(self.actionAbout)
 
         self.explorer_action = QtGui.QAction(self.tr("Open logs folder"), self)
-        self.explorer_action.triggered.connect(lambda: open_file_explorer(appdata_path / 'logs'))
+        self.explorer_action.triggered.connect(
+            lambda: open_file_explorer(appdata_path / "logs")
+        )
         self.menubar.addAction(self.explorer_action)
 
         self.crop_action = QtGui.QAction(self.tr("Crop"), self)
@@ -129,7 +131,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.data = Data(path=Path(path), temp_enabled=self.cb_temp.isChecked())
             self.data_to_gui()
         except Exception as e:
-            log.exception(e)
+            log.error(
+                self.tr(
+                    "TDA file load failed | Path: {} | Temp Enabled: {} | Error: {}"
+                ),
+                path,
+                self.cb_temp.isChecked(),
+                e,
+            )
             QtWidgets.QMessageBox.critical(
                 self,
                 "Error",
@@ -138,10 +147,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     @QtCore.Slot()
     def pick_video(self):
+        path = pick_path_open(filter=self.tr("Video(*.asf *.mp4);;All files(*.*)"))
+        if path == "":
+            return
         try:
-            path = pick_path_open(filter=self.tr("Video(*.asf *.mp4);;All files(*.*)"))
-            if path == "":
-                return
             self.edit_video.setText(path)
             self.crop_action.setEnabled(True)
             size = FFmpeg().get_resolution(video_path=path)
@@ -150,7 +159,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 int(size[0] * self.video_preview.height() / size[1])
             )
         except Exception as e:
-            log.exception(e)
+            log.error(self.tr("Video file load failed | Path: {} | Error: {}"), path, e)
             QtWidgets.QMessageBox.critical(
                 self,
                 "Error",
@@ -189,11 +198,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             return
         self.data.operator = self.edit_operator.text()
         self.data.sample = self.edit_sample.text()
-        coeff = []
-        coeff.append(self.edit_a3.text())
-        coeff.append(self.edit_a2.text())
-        coeff.append(self.edit_a1.text())
-        coeff.append(self.edit_a0.text())
+
+        # Polynomial coefficients stored in reverse order (a3->a0)
+        # to match numpy.poly1d's coefficient ordering convention
+        coeff = [
+            self.edit_a3.text(),
+            self.edit_a2.text(),
+            self.edit_a1.text(),
+            self.edit_a0.text(),
+        ]
         self.data.temp_enabled = self.cb_temp.isChecked()
         self.data.coeff = coeff
         self.data.recalc_temp()

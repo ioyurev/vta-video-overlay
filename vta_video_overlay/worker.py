@@ -60,6 +60,10 @@ class Worker(QtCore.QThread):
         self.crop_rect = crop_rect
 
     def do_work(self):
+        # Worker requires writeable temp files for multi-stage processing
+        # - Stage 1: Convert to MP4 container for reliable timestamp access
+        # - Stage 2: Process frames with OpenCV overlays
+        # - Stage 3: Re-encode
         self.tempdir = Path(tempfile.mkdtemp())
         tmpfile1 = Path(self.tempdir / "out1.mp4")
         tmpfile2 = Path(self.tempdir / "out2.mp4")

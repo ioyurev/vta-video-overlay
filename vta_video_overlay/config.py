@@ -91,6 +91,13 @@ class Config:
         try:
             with open(self.path, "w") as configfile:
                 self.config.write(configfile)
+            log.info(
+                QtCore.QCoreApplication.tr(
+                    "Config updated | Logo Enabled: {} | Text Enabled: {}"
+                ),
+                self.logo_enabled,
+                self.additional_text_enabled,
+            )
         except Exception as e:
             log.exception(e)
 
