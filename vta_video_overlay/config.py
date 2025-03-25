@@ -80,4 +80,4 @@ class Config:
 
 appdata_path = set_appdata_folder()
 setup_logging(appdata_path=appdata_path)
-config = Config(path=appdata_path)
+config = Config(path=appdata_path / "config.ini")
