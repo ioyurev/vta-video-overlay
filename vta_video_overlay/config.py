@@ -1,3 +1,20 @@
+"""
+Application configuration management
+
+Key Responsibilities:
+- Handles config file creation/parsing
+- Manages logging configuration
+- Provides runtime settings to other modules
+
+Main Components:
+- Config: Main configuration parser class
+- DEFAULT_CONFIG: Baseline configuration template
+
+Dependencies:
+- configparser: For INI file handling
+- pathlib: For cross-platform path management
+"""
+
 import configparser
 import os
 import sys

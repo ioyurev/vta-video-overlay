@@ -1,3 +1,20 @@
+"""
+Background video processing thread
+
+Key Responsibilities:
+- Runs CPU-intensive tasks in separate thread
+- Coordinates FFmpeg/OpenCV processing stages
+- Emits progress signals to UI
+
+Main Components:
+- Worker: QThread subclass handling processing pipeline
+- ProcessProgress: Data class for progress reporting
+
+Dependencies:
+- PySide6.QtCore: For thread management
+- tempfile: For temporary directory handling
+"""
+
 import os
 import shutil
 import tempfile

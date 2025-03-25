@@ -1,3 +1,40 @@
+"""
+TDA file parsing and data management
+
+Key Responsibilities:
+- Parse VPTAnalyzer (.tda) file format
+- Handle sensor data extraction and temperature calibration
+- Manage polynomial coefficient processing for temperature conversion
+- Generate Excel reports with formatted data and charts
+
+Main Components:
+- Data: Core data container class implementing:
+  - TDA file parsing and metadata extraction
+  - Temperature calculation via polynomial coefficients
+  - Excel report generation with embedded charts
+- Headers: Column name definitions for data structuring
+
+Dependencies:
+- pandas: DataFrame management for Excel export
+- numpy: Numerical array operations
+- pathlib: Cross-platform file path handling
+- openpyxl: Excel workbook/chart generation
+- PySide6.QtCore: Translation support
+
+File Format Handling:
+- Processes custom TDA format containing:
+  - Metadata headers (XML-like tags)
+  - Tabular sensor measurements
+  - Calibration coefficients
+
+Processing Flow:
+1. Parse metadata headers
+2. Extract numerical measurements
+3. Apply temperature calibration
+4. Generate structured DataFrame
+5. Export to formatted Excel workbook
+"""
+
 from io import StringIO
 from pathlib import Path
 

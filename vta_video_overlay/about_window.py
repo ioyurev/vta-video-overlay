@@ -1,5 +1,28 @@
+"""
+About dialog window implementation
+
+Key Responsibilities:
+- Displays application metadata and credits
+- Shows version information from __version__
+- Provides links to repository and author contact
+
+Main Components:
+- AboutWindow: QDialog subclass containing:
+  - Application logo display
+  - Version information label
+  - Author contact information
+  - Repository link
+
+Dependencies:
+- PySide6.QtWidgets: Dialog and layout management
+- PySide6.QtGui: Image handling for logo display
+- PySide6.QtCore: Translation support
+- .__version__: For current version display
+"""
+
+from PySide6 import QtCore, QtGui, QtWidgets
+
 from .__version__ import __version__
-from PySide6 import QtWidgets, QtCore, QtGui
 
 REPO_LINK = "https://gitflic.ru/project/i-o-yurev/vta-video-overlay"
 AUTHOR_EMAIL = "i.o.yurev@yandex.ru"

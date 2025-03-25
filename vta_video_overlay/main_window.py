@@ -1,3 +1,31 @@
+"""
+Main application window and core UI controller
+
+Key Responsibilities:
+- Serves as primary user interface for video overlay operations
+- Coordinates data flow between UI components and processing backend
+- Manages file selection dialogs (TDA/video)
+- Handles processing pipeline initialization
+- Maintains application state between operations
+
+Main Components:
+- MainWindow: QMainWindow subclass containing:
+  - File input controls
+  - Parameter configuration UI
+  - Processing progress visualization
+  - System status display
+- Worker thread management system
+- Signal/slot connections for inter-component communication
+
+Dependencies:
+- PySide6.QtWidgets: Core UI components
+- .worker: Background processing thread
+- .about_window: Help/credits dialog
+- .config: Application settings persistence
+- .crop_selection_window: Crop region selection dialog
+- loguru: Application event logging
+"""
+
 import platform
 import subprocess
 from pathlib import Path
@@ -7,6 +35,7 @@ from PySide6 import QtCore, QtGui, QtWidgets
 
 from .__version__ import __version__
 from .about_window import AboutWindow
+from .config import appdata_path
 from .crop_selection_widgets import RectangleGeometry
 from .crop_selection_window import CropSelectionWindow
 from .data_collections import ProcessProgress, ProcessResult
@@ -14,7 +43,6 @@ from .ffmpeg_utils import FFmpeg
 from .tda_file import Data
 from .ui.MainWindow import Ui_MainWindow
 from .worker import Worker
-from .config import appdata_path
 
 
 def open_file_explorer(path: Path):

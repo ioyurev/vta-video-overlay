@@ -1,3 +1,24 @@
+"""
+Crop region selection dialog window
+
+Key Responsibilities:
+- Provides UI for interactive video crop selection
+- Coordinates between visual selection and numeric input controls
+- Handles video resolution/viewport coordinate conversions
+
+Main Components:
+- CropSelectionWindow: QDialog containing:
+  - Video preview viewport (GraphicsView)
+  - SpinBox controls for precise crop coordinates
+  - Slider for video timeline navigation
+
+Dependencies:
+- PySide6.QtWidgets: Dialog and input components
+- .crop_selection_widgets: GraphicsView integration
+- .ffmpeg_utils: Video resolution detection
+- .ui.CropSelectionWindow: Generated UI layout
+"""
+
 from pathlib import Path
 
 from PySide6 import QtCore, QtWidgets

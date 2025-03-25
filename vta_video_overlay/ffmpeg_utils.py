@@ -1,3 +1,28 @@
+"""
+FFmpeg video processing utilities
+
+Key Responsibilities:
+- Interface with FFmpeg CLI tools for video analysis and processing
+- Handle video metadata extraction (resolution, timestamps)
+- Execute and monitor video conversion operations
+- Provide progress tracking for long-running FFmpeg tasks
+
+Main Components:
+- FFmpeg: Core class implementing:
+  - get_resolution(): Video dimension detection
+  - get_timestamps(): Frame timestamp extraction
+  - convert_video(): Format conversion with progress reporting
+  - check_for_packets(): Stream validation
+- get_pts(): Helper for timestamp extraction from FFprobe output
+
+Dependencies:
+- subprocess: CLI command execution
+- ffmpeg-progress-yield: Conversion progress monitoring
+- loguru: Processing status logging
+- PySide6.QtCore: Signal emission for UI updates
+- ffmpeg-python: Video stream analysis
+"""
+
 import json
 import subprocess
 from decimal import Decimal

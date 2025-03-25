@@ -1,3 +1,23 @@
+"""
+Interactive video crop selection widgets
+
+Key Responsibilities:
+- Provides UI components for selecting video crop regions
+- Handles user interaction with draggable crop boundaries
+- Maintains geometry synchronization between UI and video coordinates
+
+Main Components:
+- RectangleGeometry: Immutable data structure for crop dimensions
+- Rectangle: Interactive QGraphicsItem representing crop area
+- GraphicsView: Custom view handling video display and selection
+
+Dependencies:
+- PySide6.QtWidgets: Core GUI components
+- PySide6.QtMultimedia: Video playback integration
+- PySide6.QtMultimediaWidgets: Video display surface
+- PySide6.QtCore: Coordinate transformation logic
+"""
+
 from pathlib import Path
 from typing import NamedTuple
 
