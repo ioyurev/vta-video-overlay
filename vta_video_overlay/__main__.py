@@ -5,7 +5,9 @@ from loguru import logger as log
 from PySide6 import QtCore, QtWidgets
 
 import vta_video_overlay.ui.resources_rc  # noqa: F401
+from vta_video_overlay.controller import Controller
 from vta_video_overlay.main_window import MainWindow
+
 
 class App(QtWidgets.QApplication):
     def check_environment(self):
@@ -33,7 +35,8 @@ class App(QtWidgets.QApplication):
         if not self.check_environment():
             return
         self.set_language()
-        w = MainWindow()
+        c = Controller()
+        w = MainWindow(controller=c)
         w.show()
         self.exec()
 

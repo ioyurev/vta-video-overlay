@@ -36,13 +36,11 @@ from PySide6 import QtCore, QtGui, QtWidgets
 from .__version__ import __version__
 from .about_window import AboutWindow
 from .config import appdata_path
+from .controller import Controller
 from .crop_selection_widgets import RectangleGeometry
-from .crop_selection_window import CropSelectionWindow
 from .data_collections import ProcessProgress, ProcessResult
-from .ffmpeg_utils import FFmpeg
 from .tda_file import Data
 from .ui.MainWindow import Ui_MainWindow
-from .worker import Worker
 
 
 def open_file_explorer(path: Path):
@@ -55,27 +53,18 @@ def open_file_explorer(path: Path):
         print("Unsupported operating system")
 
 
-def pick_path_save():
-    return QtWidgets.QFileDialog.getSaveFileName(
-        filter=QtCore.QCoreApplication.tr("Video(*.mp4)")
-    )[0]
-
-
-def pick_path_open(filter=QtCore.QCoreApplication.tr("All files(*.*)")):
-    return QtWidgets.QFileDialog.getOpenFileName(filter=filter)[0]
-
-
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
-    data: Data
-    crop_rect: RectangleGeometry | None = None
-
-    def __init__(self):
+    def __init__(self, controller: Controller):
         super().__init__()
         self.setupUi(self)
+
+        self.controller = controller
+        self.controller.setParent(self)
+        self.controller.crop_done.connect(self.crop_done)
+
         self.btn_tda.clicked.connect(self.pick_tda)
         self.btn_video.clicked.connect(self.pick_video)
         self.btn_convert.clicked.connect(self.overlay)
-        self.cb_trim.clicked.connect(self.switch_sb_trim)
         self.statusbar.addWidget(
             QtWidgets.QLabel(self.tr("Version: {v}").format(v=__version__))
         )
@@ -91,80 +80,47 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.menubar.addAction(self.explorer_action)
 
         self.crop_action = QtGui.QAction(self.tr("Crop"), self)
-        self.crop_action.triggered.connect(self.crop)
+        self.crop_action.triggered.connect(self.controller.crop)
         self.crop_action.setEnabled(False)
         self.menubar.addAction(self.crop_action)
 
         self.video_preview.setScaledContents(True)
 
-    def crop_done(self):
-        self.crop_rect = self.sel_win.get_crop_rect()
-        log.info(self.tr("Crop done: {xywh}").format(xywh=self.crop_rect))
-        w = self.crop_rect.w * self.video_preview.height() // self.crop_rect.h
+    def overlay(self):
+        self.set_stuff_enabled(False)
+        convert_excel = self.cb_excel.isChecked()
+        self.controller.pipeline.stage_progress.connect(self.update_progressbar)
+        self.controller.pipeline.stage_finished.connect(self.stage_finished)
+        self.controller.pipeline.work_finished.connect(self.finished)
+        self.gui_to_data()
+        self.controller.overlay(convert_excel=convert_excel)
+
+    @QtCore.Slot()
+    def crop_done(self, rect: RectangleGeometry):
+        log.info(self.tr("Crop done: {xywh}").format(xywh=rect))
+        w = rect.w * self.video_preview.height() // rect.h
         self.video_preview.setMinimumWidth(w)
 
     @QtCore.Slot()
-    def crop(self):
-        if self.edit_video.text() == "":
-            return
-        self.sel_win = CropSelectionWindow(parent=self)
-        self.sel_win.accepted.connect(self.crop_done)
-        self.sel_win.set_file(file=Path(self.edit_video.text()))
-        self.sel_win.show()
+    def pick_tda(self):
+        data = self.controller.pick_tda(temp_enabled=self.cb_temp.isChecked())
+        if data is not None:
+            self.data_to_gui(data=data)
+
+    @QtCore.Slot()
+    def pick_video(self):
+        path, size = self.controller.pick_video()
+        self.edit_video.setText(path)
+        self.crop_action.setEnabled(True)
+        self.video_preview.setMinimumHeight(self.video_preview.height())
+        self.video_preview.setMinimumWidth(
+            int(size[0] * self.video_preview.height() / size[1])
+        )
 
     @QtCore.Slot()
     def show_about(self):
         self.about_window.show()
         self.about_window.raise_()
-
-    @QtCore.Slot()
-    def switch_sb_trim(self):
-        self.sb_trim.setEnabled(self.cb_trim.isChecked())
-
-    @QtCore.Slot()
-    def pick_tda(self):
-        try:
-            path = pick_path_open(filter=self.tr("VPTAnalizer file(*.tda)"))
-            if path == "":
-                return
-            self.edit_tda.setText(path)
-            self.data = Data(path=Path(path), temp_enabled=self.cb_temp.isChecked())
-            self.data_to_gui()
-        except Exception as e:
-            log.error(
-                self.tr(
-                    "TDA file load failed | Path: {} | Temp Enabled: {} | Error: {}"
-                ),
-                path,
-                self.cb_temp.isChecked(),
-                e,
-            )
-            QtWidgets.QMessageBox.critical(
-                self,
-                "Error",
-                self.tr("Failed to read TDA file."),
-            )
-
-    @QtCore.Slot()
-    def pick_video(self):
-        path = pick_path_open(filter=self.tr("Video(*.asf *.mp4);;All files(*.*)"))
-        if path == "":
-            return
-        try:
-            self.edit_video.setText(path)
-            self.crop_action.setEnabled(True)
-            size = FFmpeg().get_resolution(video_path=path)
-            self.video_preview.setMinimumHeight(self.video_preview.height())
-            self.video_preview.setMinimumWidth(
-                int(size[0] * self.video_preview.height() / size[1])
-            )
-        except Exception as e:
-            log.error(self.tr("Video file load failed | Path: {} | Error: {}"), path, e)
-            QtWidgets.QMessageBox.critical(
-                self,
-                "Error",
-                self.tr("Failed to read video file."),
-            )
 
     def set_stuff_enabled(self, val: bool):
         self.btn_tda.setEnabled(val)
@@ -179,26 +135,18 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.edit_a2.setEnabled(val)
         self.edit_a3.setEnabled(val)
         self.cb_temp.setEnabled(val)
-        self.cb_trim.setEnabled(val)
         self.cb_excel.setEnabled(val)
-        # self.cb_plot.setEnabled(val)
-        self.sb_trim.setEnabled(val)
 
-    def data_to_gui(self):
-        self.edit_operator.setText(self.data.operator)
-        self.edit_sample.setText(self.data.sample)
-        self.edit_a0.setText(str(self.data.coeff[3]))
-        self.edit_a1.setText(str(self.data.coeff[2]))
-        self.edit_a2.setText(str(self.data.coeff[1]))
-        self.edit_a3.setText(str(self.data.coeff[0]))
-        self.sb_trim.setMaximum(self.data.data_time[-1] / 2)
+    def data_to_gui(self, data: Data):
+        self.edit_tda.setText(str(data.path))
+        self.edit_operator.setText(data.operator)
+        self.edit_sample.setText(data.sample)
+        self.edit_a0.setText(str(data.coeff[3]))
+        self.edit_a1.setText(str(data.coeff[2]))
+        self.edit_a2.setText(str(data.coeff[1]))
+        self.edit_a3.setText(str(data.coeff[0]))
 
     def gui_to_data(self):
-        if self.data is None:
-            return
-        self.data.operator = self.edit_operator.text()
-        self.data.sample = self.edit_sample.text()
-
         # Polynomial coefficients stored in reverse order (a3->a0)
         # to match numpy.poly1d's coefficient ordering convention
         coeff = [
@@ -207,9 +155,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.edit_a1.text(),
             self.edit_a0.text(),
         ]
-        self.data.temp_enabled = self.cb_temp.isChecked()
-        self.data.coeff = coeff
-        self.data.recalc_temp()
+        self.controller.pipeline.set_metadata(
+            op=self.edit_operator.text(),
+            samplename=self.edit_sample.text(),
+            coeff=coeff,
+            temp_enabled=self.cb_temp.isChecked(),
+        )
 
     @QtCore.Slot(ProcessResult)
     def finished(self, tpl: ProcessResult):
@@ -243,43 +194,3 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         total, stage_str, unit = tpl
         self.progressbar.setValue(0)
         self.progressbar.setMaximum(total)
-
-    @QtCore.Slot()
-    def overlay(self):
-        path_str = pick_path_save()
-        if path_str == "":
-            return
-        savepath = Path(path_str)
-        self.gui_to_data()
-        if self.cb_trim.isChecked():
-            start_timestamp = self.sb_trim.value()
-        else:
-            start_timestamp = 0.0
-        log.info(self.tr("Operator: {operator}").format(operator=self.data.operator))
-        log.info(self.tr("Sample: {sample}").format(sample=self.data.sample))
-        log.info(
-            self.tr("Temperature calibration enabled: {bool}").format(
-                bool=self.data.temp_enabled
-            )
-        )
-        log.info(
-            self.tr("Polynomial coefficients: {coeff}").format(coeff=self.data.coeff)
-        )
-        # log.info(f"Plot enabled: {self.cb_plot.isChecked()}")
-        w = Worker(
-            parent=self,
-            video_file_path_input=Path(self.edit_video.text()),
-            video_file_path_output=savepath,
-            data=self.data,
-            start_timestamp=start_timestamp,
-            # plot_enabled=self.cb_plot.isChecked(),
-            crop_rect=self.crop_rect,
-        )
-        w.stage_progress.connect(self.update_progressbar)
-        w.stage_finished.connect(self.stage_finished)
-        w.work_finished.connect(self.finished)
-        if self.cb_excel.isChecked():
-            excelpath = Path(self.edit_tda.text()).with_suffix(".xlsx")
-            self.data.to_excel(excelpath)
-        self.set_stuff_enabled(False)
-        w.start()

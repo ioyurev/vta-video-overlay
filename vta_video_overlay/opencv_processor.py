@@ -65,14 +65,8 @@ class CVProcessor(QtCore.QObject):
         self.temp_enabled = video_data.temp_enabled
         self.crop_rect = crop_rect
 
-    def loop(self, start_timestamp: float):
-        self.video_input.set(cv2.CAP_PROP_POS_MSEC, start_timestamp * 1000)
-        first_frame_index = int(self.video_input.get(cv2.CAP_PROP_POS_FRAMES))
-        log.info(
-            self.tr("Time trim: {timestamp}, frame: {i}").format(
-                timestamp=start_timestamp, i=first_frame_index
-            )
-        )
+    def loop(self):
+        self.video_input.set(cv2.CAP_PROP_POS_MSEC, 0)
         ret = True
         frame_index = 0
         while ret:
@@ -86,9 +80,6 @@ class CVProcessor(QtCore.QObject):
                 break
             frame_index = int(self.video_input.get(cv2.CAP_PROP_POS_FRAMES)) - 1
             if frame_index < 0:
-                continue
-            timestamp = self.video_data.timestamps[frame_index]
-            if timestamp < start_timestamp:
                 continue
 
             if self.temp_enabled:
@@ -117,11 +108,10 @@ class CVProcessor(QtCore.QObject):
             self.video_output.write(frame.image)
             self.progress_signal.emit(ProcessProgress(value=frame_index, frame=frame))
 
-    def run(self, start_timestamp: float):
+    def run(self):
         self.video_input = cv2.VideoCapture(str(self.path_input))
         frame_width = int(self.video_input.get(3))
         frame_height = int(self.video_input.get(4))
-        # add_height = TEXT_HEIGHT * (1 + int(config.additional_text_enabled))
         if self.crop_rect is not None:
             size = (self.crop_rect.w, self.crop_rect.h)
         else:
@@ -135,7 +125,7 @@ class CVProcessor(QtCore.QObject):
             fps=fps,
             frameSize=size,
         )
-        self.loop(start_timestamp=start_timestamp)
+        self.loop()
         self.video_input.release()
         self.video_output.release()
         log.info(self.tr("OpenCV has finished"))

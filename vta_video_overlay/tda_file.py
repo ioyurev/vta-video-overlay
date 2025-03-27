@@ -75,6 +75,7 @@ class Data(QtCore.QObject):
 
     def __init__(self, path: Path, temp_enabled=True) -> None:
         super().__init__()
+        self.path = path
         with open(file=path, mode="r", encoding="cp1251") as f:
             lines_raw = f.readlines()
         lines_data, self.sample, self.operator, self.coeff = parse_lines(
