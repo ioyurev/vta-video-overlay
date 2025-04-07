@@ -1,5 +1,6 @@
 import locale
 import shutil
+import sys
 
 from loguru import logger as log
 from PySide6 import QtCore, QtWidgets
@@ -7,6 +8,13 @@ from PySide6 import QtCore, QtWidgets
 import vta_video_overlay.ui.resources_rc  # noqa: F401
 from vta_video_overlay.controller import Controller
 from vta_video_overlay.main_window import MainWindow
+
+
+def close_splash():
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+        import pyi_splash  # type: ignore
+
+        pyi_splash.close()
 
 
 class App(QtWidgets.QApplication):
@@ -42,4 +50,5 @@ class App(QtWidgets.QApplication):
 
 
 if __name__ == "__main__":
+    close_splash()
     App().run()

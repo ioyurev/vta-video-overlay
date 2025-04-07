@@ -29,9 +29,9 @@ Used By:
 - worker: For final output frame composition
 """
 
-from config import bg_color, text_color
 from PIL import Image, ImageDraw, ImageFont
 
+from .config import bg_color, text_color
 from .enums import Alignment
 
 try:
