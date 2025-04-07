@@ -75,6 +75,8 @@ class Config:
         if self.logo_enabled:
             try:
                 self.logo_img = cv2.imread("logo.png")
+                if self.logo_img is None:
+                    self.logo_enabled = False
             except Exception as e:
                 log.error(f"Failed to load logo file: {e}")
                 self.logo_enabled = False
