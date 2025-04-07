@@ -21,6 +21,7 @@ ffmpeg-python = "^0.2.0"
 xlsxwriter = "^3.2.0"
 click = "^8.1.7"
 tqdm = "^4.66.5"
+pillow = "^11.1.0"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -30,7 +31,6 @@ commitizen = "^3.18.0"
 mypy = "^1.9.0"
 autoflake = "^2.3.0"
 pyinstaller = "^6.5.0"
-pillow = "^10.2.0"
 isort = "^5.13.2"
 
 [tool.commitizen]
