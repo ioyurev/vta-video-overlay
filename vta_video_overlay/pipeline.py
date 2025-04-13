@@ -28,7 +28,7 @@ class Pipeline(QtCore.QThread):
     data: Data
     video_path_input: Path
     video_path_output: Path
-    crop_rect: RectangleGeometry | None
+    crop_rect: RectangleGeometry | None = None
 
     def run(self):
         try:
