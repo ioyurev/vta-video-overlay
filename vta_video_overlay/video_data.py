@@ -1,31 +1,22 @@
 """
-Video-sensor data synchronization and processing
+Video-sensor temporal alignment and synchronization system
 
 Key Responsibilities:
-- Align video frame timestamps with sensor measurements
-- Manage temporal correlation between video and telemetry data
-- Calculate derived metrics (e.g., dE/dt) for analysis
-- Provide synchronized data access for processing pipelines
-
-Main Components:
-- VideoData: Core data container implementing:
-  - Frame timestamp synchronization via FFmpeg
-  - Sensor data interpolation for video alignment
-  - Gradient calculations for EMF changes
-  - Temperature data validation/processing
-
-Dependencies:
-- .ffmpeg_utils: Video timestamp extraction
-- .tda_file: Sensor data source (Data class)
-- numpy: Array operations and interpolation
-- PySide6.QtCore: QObject integration
+- Precise frame-level alignment of video and sensor data streams
+- Temporal interpolation of sensor measurements to video timestamps
+- Validation of time synchronization integrity
+- Provision of aligned datasets for overlay rendering
 
 Data Flow:
-1. Extract video frame timestamps using FFprobe
-2. Interpolate sensor data to match video temporal resolution
-3. Calculate first derivative of EMF measurements (dE/dt)
-4. Validate temperature calibration status
-5. Provide aligned datasets for overlay rendering
+1. Extract millisecond-precise video timestamps via FFprobe
+2. Convert sensor data timebase (seconds) to video timebase (ms)
+3. Interpolate sensor measurements to video frame timestamps
+4. Validate alignment through statistical analysis
+
+Synchronization Details:
+- Uses PTS (Presentation Timestamp) values from video container
+- Handles variable frame rate (VFR) content through exact timestamps
+- Accounts for sensor sampling rate vs video frame rate disparities
 """
 
 from pathlib import Path

@@ -1,32 +1,26 @@
 """
-PIL-based image frame processing utilities
+PIL-based image composition and text rendering system
 
 Key Responsibilities:
-- Handle Pillow (PIL) image manipulation and annotation
-- Implement text rendering with alignment and styling
-- Manage image overlay composition and blending
-- Provide conversion between PIL and other image formats
+- High-quality text rendering with typographic controls
+- Multi-layer image composition with alpha blending
+- Coordinate system management for precise element placement
+- Font configuration and fallback handling
+- Cross-format compatibility with OpenCV frames
 
-Main Components:
-- PILFrame: Core image container implementing:
-  - Text annotation with position/alignment control
-  - Multi-line text rendering with padding
-  - Overlay image blending with transparency
-  - Conversion to/from OpenCV-compatible formats
-- Font configuration management for text rendering
-- Coordinate calculation utilities for element placement
+Implementation Details:
+- Uses PIL's advanced anti-aliasing for text rendering
+- Automatic padding calculation based on font metrics
+- Anchor point system for alignment positioning
+- Color format conversion (BGR ↔ RGB) for OpenCV compatibility
+- Cached font objects for performance
 
-Dependencies:
-- PIL.Image: Core image manipulation
-- PIL.ImageDraw: Text rendering capabilities
-- PIL.ImageFont: Font configuration handling
-- .enums: Alignment position definitions
-- .config: Text/overlay styling configuration
-
-Used By:
-- opencv_processor: For converting PIL frames to OpenCV format
-- main_window: For preview image generation in UI
-- worker: For final output frame composition
+Text Rendering Features:
+- Unicode!
+- Background padding with configurable margins
+- Multi-size text support (small/large variants)
+- Vertical text stacking with automatic spacing
+- Color inversion protection (light/dark themes)
 """
 
 from PIL import Image, ImageDraw, ImageFont

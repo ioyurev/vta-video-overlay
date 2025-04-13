@@ -1,29 +1,19 @@
 """
-OpenCV video frame processing and overlay system
+OpenCV frame processing and composition utilities
 
 Key Responsibilities:
-- Handle OpenCV frame manipulation and conversion operations
-- Implement text/logo overlay rendering with alignment control
-- Manage coordinate system transformations between processing and display
-- Provide conversion between OpenCV/PIL/Qt image formats
+- Core image manipulation for video overlay rendering
+- Coordinate system management for text/graphic placement
+- Conversion between OpenCV, PIL and Qt image formats
+- Transparency-aware image compositing
+- Border management and aspect ratio preservation
 
-Main Components:
-- CVFrame: Core image container implementing:
-  - Cropping/border operations
-  - Text rendering with background padding
-  - Image overlay composition
-  - Qt pixmap conversion for UI display
-- Font: Configuration container for text rendering properties
-- Alignment integration with enums.Alignment values
-- Geometry conversion utilities
-
-Dependencies:
-- OpenCV (cv2): Core image processing operations
-- numpy: Array manipulation for image data
-- PySide6.QtGui: Pixmap conversion for UI preview
-- PIL.Image: Cross-format image conversions
-- .enums: Alignment position definitions
-- .crop_selection_widgets: RectangleGeometry type
+Implementation Details:
+- Uses OpenCV's BGR color space internally
+- Automatic alpha channel detection in overlays
+- Text bounding box calculations with safe margins
+- Numpy-based matrix operations for performance
+- Qt image integration via memory buffer sharing
 """
 
 from typing import NamedTuple

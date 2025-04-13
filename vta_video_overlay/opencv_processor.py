@@ -1,37 +1,28 @@
 """
-OpenCV-based video processing pipeline
+OpenCV video processing pipeline and overlay composition system
 
 Key Responsibilities:
-- Execute frame-by-frame video processing with overlay operations
-- Coordinate video I/O stream management
-- Implement core image processing workflow
-- Emit processing progress updates
-
-Main Components:
-- CVProcessor: Main processing class handling:
-  - Video stream input/output management
-  - Frame processing loop execution
-  - Progress signal emission
-- Frame composition utilities for:
-  - Text overlay rendering
-  - Logo positioning and blending
-  - Coordinate system transformations
-
-Dependencies:
-- OpenCV (cv2): Video capture/write operations
-- numpy: Image array manipulations
-- .video_data: Video metadata and aligned sensor data
-- .config: Overlay configuration settings
-- .data_collections: ProcessProgress signaling
-- .opencv_frame: CVFrame processing utilities
-- PySide6.QtCore: Signal emission for UI integration
+- Manage complete OpenCV video processing workflow from input to output
+- Coordinate frame-by-frame overlay application and rendering
+- Handle video stream I/O
+- Maintain synchronization between video frames and sensor data
+- Implement resolution-aware cropping and scaling
 
 Processing Flow:
-1. Initialize video streams
-2. Process frames with configured overlays
-3. Handle coordinate system conversions
-4. Write output video
-5. Emit progress updates
+1. Video input initialization with resolution detection
+2. Crop application (if specified) using RectangleGeometry
+3. Per-frame processing:
+   a) Base frame acquisition
+   b) Logo overlay application (if enabled)
+   c) Text/metadata rendering
+   d) Temperature display (if calibrated)
+4. Output stream writing
+5. Progress tracking and signal emission
+
+Performance Considerations:
+- Zero-copy frame operations where possible
+- Pre-calculated sensor data arrays
+- Batched OpenCV operations
 """
 
 from pathlib import Path

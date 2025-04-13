@@ -1,38 +1,28 @@
 """
-TDA file parsing and data management
+TDA file parser and scientific data processor
 
 Key Responsibilities:
-- Parse VPTAnalyzer (.tda) file format
-- Handle sensor data extraction and temperature calibration
-- Manage polynomial coefficient processing for temperature conversion
-- Generate Excel reports with formatted data and charts
+- Parse VPTAnalyzer's proprietary .tda sensor data format
+- Handle scientific notation and locale-specific number formatting
+- Manage polynomial temperature calibration formulas
+- Generate Excel reports with interactive charts and metadata
+- Maintain time synchronization between sensor data and video
 
-Main Components:
-- Data: Core data container class implementing:
-  - TDA file parsing and metadata extraction
-  - Temperature calculation via polynomial coefficients
-  - Excel report generation with embedded charts
-- Headers: Column name definitions for data structuring
-
-Dependencies:
-- pandas: DataFrame management for Excel export
-- numpy: Numerical array operations
-- pathlib: Cross-platform file path handling
-- openpyxl: Excel workbook/chart generation
-- PySide6.QtCore: Translation support
-
-File Format Handling:
-- Processes custom TDA format containing:
-  - Metadata headers (XML-like tags)
-  - Tabular sensor measurements
-  - Calibration coefficients
+File Format Specifications:
+- Custom ASCII format with XML-like metadata headers
+- Tabular data in space-separated columns
+- Windows-1251 encoding with comma decimal separators
+- Contains:
+  - Measurement metadata (operator, sample, timestamps)
+  - Raw EMF (electromotive force) measurements
+  - Polynomial coefficients for temperature conversion
 
 Processing Flow:
-1. Parse metadata headers
-2. Extract numerical measurements
-3. Apply temperature calibration
-4. Generate structured DataFrame
-5. Export to formatted Excel workbook
+1. Metadata extraction from header lines
+2. Numeric data parsing with locale adaptation
+3. Timebase conversion (days to seconds)
+4. Temperature polynomial application
+5. Excel workbook creation with embedded charts
 """
 
 from io import StringIO

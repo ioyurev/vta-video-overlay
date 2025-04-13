@@ -1,29 +1,25 @@
 """
-Main application window and core UI controller
+Main application window and central UI controller
 
 Key Responsibilities:
 - Serves as primary user interface for video overlay operations
 - Coordinates data flow between UI components and processing backend
-- Manages file selection dialogs (TDA/video)
-- Handles processing pipeline initialization
-- Maintains application state between operations
+- Manages application state and persistent configurations
+- Handles system tray integration and background operations
 
-Main Components:
-- MainWindow: QMainWindow subclass containing:
-  - File input controls
-  - Parameter configuration UI
-  - Processing progress visualization
-  - System status display
-- Worker thread management system
-- Signal/slot connections for inter-component communication
+Usage Flow:
+1. File selection (.tda + video)
+2. Parameter configuration
+3. Optional crop selection
+4. Processing initialization
+5. Real-time progress monitoring
+6. Completion notification/error handling
 
-Dependencies:
-- PySide6.QtWidgets: Core UI components
-- .worker: Background processing thread
-- .about_window: Help/credits dialog
-- .config: Application settings persistence
-- .crop_selection_window: Crop region selection dialog
-- loguru: Application event logging
+Preview System:
+- OpenCV-to-Qt image conversion pipeline
+- Aspect ratio-preserving scaling
+- Frame buffer management
+- Low-latency preview updates
 """
 
 import platform

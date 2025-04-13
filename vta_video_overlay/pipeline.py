@@ -1,3 +1,36 @@
+"""
+Video processing pipeline and workflow management
+
+Key Responsibilities:
+- Coordinate multi-stage video processing workflow
+- Manage inter-process communication between components
+- Handle temporary file lifecycle and cleanup
+- Implement fault-tolerant processing with rollback capabilities
+
+Core Processing Stages:
+1. Pre-conversion:
+   - Validate input video timestamps
+   - Convert to intermediate format if needed
+2. OpenCV Processing:
+   - Apply graphical overlays and cropping
+   - Handle frame-by-frame composition
+3. Final Encoding:
+   - Convert to target format with proper codecs
+   - Apply final quality adjustments
+
+Processing Flow:
+1. Input validation and temporary directory creation
+2. Pre-conversion (if required) using FFmpeg
+3. OpenCV overlay processing with progress tracking
+4. Final encoding to target format
+5. Cleanup of temporary resources
+
+Implementation Details:
+- Uses ffmpeg-progress-yield for conversion tracking
+- Maintains frame counter synchronization
+- Implements Qt's thread-safe signal emission
+"""
+
 import os
 import shutil
 import tempfile

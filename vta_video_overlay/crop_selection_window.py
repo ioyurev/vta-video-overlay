@@ -1,22 +1,23 @@
 """
-Crop region selection dialog window
+Dialog window for interactive video crop selection and validation
 
 Key Responsibilities:
-- Provides UI for interactive video crop selection
-- Coordinates between visual selection and numeric input controls
-- Handles video resolution/viewport coordinate conversions
+- Manage complete crop selection workflow from UI presentation to final coordinates
+- Synchronize between visual selection tools and numeric input controls
+- Handle video loading and frame-accurate preview positioning
+- Ensure aspect ratio preservation and valid crop region constraints
 
-Main Components:
-- CropSelectionWindow: QDialog containing:
-  - Video preview viewport (GraphicsView)
-  - SpinBox controls for precise crop coordinates
-  - Slider for video timeline navigation
+Implementation Details:
+- Maintains dual coordinate systems (viewport/video pixels)
+- Automatic parameter validation through safe_bound()
+- Resolution scaling via res_view2vid() calculations
+- Prevention of invalid state through signal blocking
 
-Dependencies:
-- PySide6.QtWidgets: Dialog and input components
-- .crop_selection_widgets: GraphicsView integration
-- .ffmpeg_utils: Video resolution detection
-- .ui.CropSelectionWindow: Generated UI layout
+Usage Flow:
+1. Initialize with video file path
+2. User interacts with visual/numeric controls
+3. Real-time coordinate system conversions
+4. Final validated geometry output on acceptance
 """
 
 from pathlib import Path

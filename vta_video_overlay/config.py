@@ -1,18 +1,18 @@
 """
-Application configuration management
+Application configuration management for video overlay system
 
-Key Responsibilities:
-- Handles config file creation/parsing
-- Manages logging configuration
-- Provides runtime settings to other modules
+Core Functionality:
+- Application environment initialization
+- INI configuration file handling
+- Logging system configuration
+- Overlay parameters and UI settings management
+- Graphic resources processing
 
-Main Components:
-- Config: Main configuration parser class
-- DEFAULT_CONFIG: Baseline configuration template
-
-Dependencies:
-- configparser: For INI file handling
-- pathlib: For cross-platform path management
+Implementation Highlights:
+- Cross-platform path handling (Windows/Linux)
+- Automatic directory structure creation
+- Graphic resources validation during loading
+- Qt interface integration through localization system
 """
 
 import configparser

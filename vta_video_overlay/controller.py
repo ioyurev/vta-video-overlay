@@ -1,3 +1,21 @@
+"""
+Central controller for application logic and component coordination
+
+Key Responsibilities:
+- Manages file selection dialogs for sensor data (.tda) and video files
+- Coordinates video cropping operations through CropSelectionWindow
+- Controls main video processing pipeline execution
+- Handles inter-component communication via Qt signals/slots
+- Bridges UI interactions with backend processing logic
+
+Core Functionality:
+- Validates and loads sensor data files
+- Initializes video processing parameters
+- Manages temporary directories and cleanup
+- Handles error states and user notifications
+- Maintains application state during processing
+"""
+
 from pathlib import Path
 
 from loguru import logger as log
@@ -103,7 +121,4 @@ class Controller(QtCore.QObject):
         if convert_excel:
             excelpath = Path(self.pipeline.data.path).with_suffix(".xlsx")
             self.pipeline.data.to_excel(excelpath)
-        # self.pipeline.stage_progress.connect(self.stage_progress)
-        # self.pipeline.stage_finished.connect(self.stage_finished)
-        # self.pipeline.work_finished.connect(self.work_finished)
         self.pipeline.start()
