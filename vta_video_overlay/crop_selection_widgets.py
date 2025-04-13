@@ -93,14 +93,6 @@ class GraphicsView(QtWidgets.QGraphicsView):
         self.scene().addItem(self.rectangle.p2)
         self.current_item = None
 
-    # def mouseMoveEvent(self, event: QtGui.QMouseEvent):
-    # item = self.itemAt(event.pos())
-    # if item in [self.p1, self.p2]:
-    #     self.setCursor(QtCore.Qt.SizeAllCursor)
-    # else:
-    #     self.setCursor(QtCore.Qt.ArrowCursor)
-    # super().mouseMoveEvent(event)
-
     def mousePressEvent(self, event: QtGui.QMouseEvent):
         item = self.itemAt(event.position().toPoint())
         if item in [self.rectangle.p1, self.rectangle.p2]:
