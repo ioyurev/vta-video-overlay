@@ -32,10 +32,10 @@ import cv2
 import numpy as np
 from PySide6 import QtGui
 
-from .config import BG_COLOR, TEXT_COLOR
-from .crop_selection_widgets import RectangleGeometry
-from .enums import Alignment
-from .pil_frame import Image, PILFrame
+from vta_video_overlay.config import BG_COLOR, TEXT_COLOR
+from vta_video_overlay.crop_selection_widgets import RectangleGeometry
+from vta_video_overlay.enums import Alignment
+from vta_video_overlay.pil_frame import Image, PILFrame
 
 
 class Font:

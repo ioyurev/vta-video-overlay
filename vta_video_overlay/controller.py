@@ -3,11 +3,11 @@ from pathlib import Path
 from loguru import logger as log
 from PySide6 import QtCore, QtWidgets
 
-from .crop_selection_widgets import RectangleGeometry
-from .crop_selection_window import CropSelectionWindow
-from .ffmpeg_utils import FFmpeg
-from .pipeline import Pipeline
-from .tda_file import Data
+from vta_video_overlay.crop_selection_widgets import RectangleGeometry
+from vta_video_overlay.crop_selection_window import CropSelectionWindow
+from vta_video_overlay.ffmpeg_utils import FFmpeg
+from vta_video_overlay.pipeline import Pipeline
+from vta_video_overlay.tda_file import Data
 
 
 def pick_path_save() -> str:

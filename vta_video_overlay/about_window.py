@@ -24,7 +24,7 @@ from typing import Final
 
 from PySide6 import QtCore, QtGui, QtWidgets
 
-from .__version__ import __version__
+from vta_video_overlay.__version__ import __version__
 
 REPO_LINK: Final = "https://gitflic.ru/project/i-o-yurev/vta-video-overlay"
 AUTHOR_EMAIL: Final = "i.o.yurev@yandex.ru"

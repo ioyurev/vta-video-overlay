@@ -34,8 +34,8 @@ import numpy as np
 from loguru import logger as log
 from PySide6 import QtCore
 
-from .ffmpeg_utils import FFmpeg
-from .tda_file import Data
+from vta_video_overlay.ffmpeg_utils import FFmpeg
+from vta_video_overlay.tda_file import Data
 
 
 class VideoData(QtCore.QObject):

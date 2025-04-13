@@ -34,7 +34,7 @@ from ffmpeg_progress_yield import FfmpegProgress
 from loguru import logger as log
 from PySide6 import QtCore
 
-from .data_collections import ProcessProgress
+from vta_video_overlay.data_collections import ProcessProgress
 
 
 def get_pts(packets: list[dict]) -> List[int]:

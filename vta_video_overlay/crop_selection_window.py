@@ -23,9 +23,9 @@ from pathlib import Path
 
 from PySide6 import QtCore, QtWidgets
 
-from .crop_selection_widgets import RectangleGeometry
-from .ffmpeg_utils import FFmpeg
-from .ui.CropSelectionWindow import Ui_Dialog
+from vta_video_overlay.crop_selection_widgets import RectangleGeometry
+from vta_video_overlay.ffmpeg_utils import FFmpeg
+from vta_video_overlay.ui.CropSelectionWindow import Ui_Dialog
 
 
 class CropSelectionWindow(QtWidgets.QDialog, Ui_Dialog):

@@ -7,12 +7,12 @@ from pathlib import Path
 from loguru import logger as log
 from PySide6 import QtCore
 
-from .crop_selection_widgets import RectangleGeometry
-from .data_collections import ProcessProgress, ProcessResult
-from .ffmpeg_utils import FFmpeg
-from .opencv_processor import CVProcessor
-from .tda_file import Data
-from .video_data import VideoData
+from vta_video_overlay.crop_selection_widgets import RectangleGeometry
+from vta_video_overlay.data_collections import ProcessProgress, ProcessResult
+from vta_video_overlay.ffmpeg_utils import FFmpeg
+from vta_video_overlay.opencv_processor import CVProcessor
+from vta_video_overlay.tda_file import Data
+from vta_video_overlay.video_data import VideoData
 
 
 def clean(tempdir: str):

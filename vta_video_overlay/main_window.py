@@ -33,14 +33,14 @@ from pathlib import Path
 from loguru import logger as log
 from PySide6 import QtCore, QtGui, QtWidgets
 
-from .__version__ import __version__
-from .about_window import AboutWindow
-from .config import appdata_path
-from .controller import Controller
-from .crop_selection_widgets import RectangleGeometry
-from .data_collections import ProcessProgress, ProcessResult
-from .tda_file import Data
-from .ui.MainWindow import Ui_MainWindow
+from vta_video_overlay.__version__ import __version__
+from vta_video_overlay.about_window import AboutWindow
+from vta_video_overlay.config import appdata_path
+from vta_video_overlay.controller import Controller
+from vta_video_overlay.crop_selection_widgets import RectangleGeometry
+from vta_video_overlay.data_collections import ProcessProgress, ProcessResult
+from vta_video_overlay.tda_file import Data
+from vta_video_overlay.ui.MainWindow import Ui_MainWindow
 
 
 def open_file_explorer(path: Path):

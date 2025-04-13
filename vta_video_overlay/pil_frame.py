@@ -31,8 +31,8 @@ Used By:
 
 from PIL import Image, ImageDraw, ImageFont
 
-from .config import BG_COLOR, TEXT_COLOR
-from .enums import Alignment
+from vta_video_overlay.config import BG_COLOR, TEXT_COLOR
+from vta_video_overlay.enums import Alignment
 
 try:
     PILFONT = ImageFont.truetype("times.ttf", 60)

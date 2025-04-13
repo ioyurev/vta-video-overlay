@@ -21,7 +21,7 @@ Dependencies:
 
 from typing import NamedTuple
 
-from .opencv_frame import CVFrame
+from vta_video_overlay.opencv_frame import CVFrame
 
 
 class ProcessProgress(NamedTuple):
