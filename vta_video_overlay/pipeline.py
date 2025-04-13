@@ -54,6 +54,7 @@ class Pipeline(QtCore.QThread):
         if FFmpeg().check_for_packets(video_path=self.video_path_input):
             file_to_overlay = self.video_path_input
             self.stage_progress.emit(ProcessProgress(value=100, frame=None))
+            log.debug(self.tr("Skipped pre-conversion (timestamps exist)"))
         else:
             file_to_overlay = tmpfile
             log.warning("Input video has no timestamps. Preconverting video...")

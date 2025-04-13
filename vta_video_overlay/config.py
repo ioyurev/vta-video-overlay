@@ -88,9 +88,9 @@ class Config:
         )
         self.additional_text = self.config["Overlay"]["additional_text"]
         log.info(QtCore.QCoreApplication.tr("Config loaded."))
-        log.info(f"additional_text_enabled: {self.additional_text_enabled}")
-        log.info(f"additional_text: {self.additional_text}")
-        log.info(f"logo_enabled: {self.logo_enabled}")
+        log.debug(f"additional_text_enabled: {self.additional_text_enabled}")
+        log.debug(f"additional_text: {self.additional_text}")
+        log.debug(f"logo_enabled: {self.logo_enabled}")
 
     def write_config(self):
         try:

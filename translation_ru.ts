@@ -220,8 +220,20 @@ Temperature (C): {temp:.0f}</source>
         <translation>Кадрирование</translation>
     </message>
     <message>
+        <source>Started video processing</source>
+        <translation>Начата обработка видео</translation>
+    </message>
+    <message>
         <source>Crop done: {xywh}</source>
         <translation>Кадрирование выполнено: {xywh}</translation>
+    </message>
+    <message>
+        <source>Selected tda file: {path}</source>
+        <translation>Выбранный файл tda: {path}</translation>
+    </message>
+    <message>
+        <source>Selected video: {path}</source>
+        <translation>Выбранное видео: {path}</translation>
     </message>
     <message>
         <source>VPTAnalizer file(*.tda)</source>
@@ -318,6 +330,13 @@ Exception occurred. See log.</source>
     <message>
         <source>Sample:</source>
         <translation>Образец:</translation>
+    </message>
+</context>
+<context>
+    <name>Pipeline</name>
+    <message>
+        <source>Skipped pre-conversion (timestamps exist)</source>
+        <translation>Пропущено предварительное преобразование (имеются временные метки)</translation>
     </message>
 </context>
 <context>

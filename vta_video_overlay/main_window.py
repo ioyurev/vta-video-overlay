@@ -93,6 +93,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.controller.pipeline.stage_finished.connect(self.stage_finished)
         self.controller.pipeline.work_finished.connect(self.finished)
         self.gui_to_data()
+        log.info(self.tr("Started video processing"))
         self.controller.overlay(convert_excel=convert_excel)
 
     @QtCore.Slot()
@@ -105,11 +106,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def pick_tda(self):
         data = self.controller.pick_tda(temp_enabled=self.cb_temp.isChecked())
         if data is not None:
+            log.info(self.tr("Selected tda file: {path}").format(path=data.path))
             self.data_to_gui(data=data)
 
     @QtCore.Slot()
     def pick_video(self):
         path, size = self.controller.pick_video()
+        log.info(self.tr("Selected video: {path}").format(path=path))
         self.edit_video.setText(path)
         self.crop_action.setEnabled(True)
         self.video_preview.setMinimumHeight(self.video_preview.height())
