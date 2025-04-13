@@ -46,32 +46,40 @@ class Pipeline(QtCore.QThread):
         tmpfile1 = Path(self.tempdir / "out1.mp4")
         tmpfile2 = Path(self.tempdir / "out2.mp4")
 
+        video_data = self._preconvert(tmpfile=tmpfile1)
+        self._cv_overlay(video_data=video_data, tmpfile=tmpfile2)
+        self._final_convert(tmpfile=tmpfile2)
+
+    def _preconvert(self, tmpfile: Path):
         if FFmpeg().check_for_packets(video_path=self.video_path_input):
             file_to_overlay = self.video_path_input
-            self.stage_progress.emit(ProcessProgress(value=100.0, frame=None))
+            self.stage_progress.emit(ProcessProgress(value=100, frame=None))
         else:
-            file_to_overlay = tmpfile1
+            file_to_overlay = tmpfile
             log.warning("Input video has no timestamps. Preconverting video...")
             FFmpeg().convert_video(
                 path_input=self.video_path_input,
                 path_output=file_to_overlay,
                 signal=self.stage_progress,
             )
-
         video_data = VideoData(video_path=file_to_overlay, data=self.data)
         self.stage_finished.emit((len(video_data.timestamps) - 1, "2/3", "frame"))
+        return video_data
 
+    def _cv_overlay(self, video_data: VideoData, tmpfile: Path):
         cv_agent = CVProcessor(
             video_data=video_data,
-            path_output=tmpfile2,
+            path_output=tmpfile,
             crop_rect=self.crop_rect,
         )
         cv_agent.progress_signal.connect(self.stage_progress.emit)
         cv_agent.run()
         self.stage_finished.emit((100.0, "3/3", "%"))
+        return
 
+    def _final_convert(self, tmpfile: Path):
         FFmpeg().convert_video(
-            path_input=tmpfile2,
+            path_input=tmpfile,
             path_output=self.video_path_output,
             signal=self.stage_progress,
         )
