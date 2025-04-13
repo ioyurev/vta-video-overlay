@@ -31,7 +31,7 @@ Used By:
 
 from PIL import Image, ImageDraw, ImageFont
 
-from .config import bg_color, text_color
+from .config import BG_COLOR, TEXT_COLOR
 from .enums import Alignment
 
 try:
@@ -53,8 +53,8 @@ class PILFrame:
         text: str,
         xy: tuple[int, int],
         align: Alignment,
-        color: tuple[int, int, int] = text_color,
-        bg_color: tuple[int, int, int] = bg_color,
+        color: tuple[int, int, int] = TEXT_COLOR,
+        bg_color: tuple[int, int, int] = BG_COLOR,
         padding: int = 5,
         small: bool = False,
     ):

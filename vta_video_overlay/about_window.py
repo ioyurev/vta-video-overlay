@@ -20,12 +20,14 @@ Dependencies:
 - .__version__: For current version display
 """
 
+from typing import Final
+
 from PySide6 import QtCore, QtGui, QtWidgets
 
 from .__version__ import __version__
 
-REPO_LINK = "https://gitflic.ru/project/i-o-yurev/vta-video-overlay"
-AUTHOR_EMAIL = "i.o.yurev@yandex.ru"
+REPO_LINK: Final = "https://gitflic.ru/project/i-o-yurev/vta-video-overlay"
+AUTHOR_EMAIL: Final = "i.o.yurev@yandex.ru"
 
 
 class AboutWindow(QtWidgets.QDialog):

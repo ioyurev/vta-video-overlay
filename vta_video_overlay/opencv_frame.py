@@ -32,7 +32,7 @@ import cv2
 import numpy as np
 from PySide6 import QtGui
 
-from .config import bg_color, text_color
+from .config import BG_COLOR, TEXT_COLOR
 from .crop_selection_widgets import RectangleGeometry
 from .enums import Alignment
 from .pil_frame import Image, PILFrame
@@ -105,8 +105,8 @@ class CVFrame:
         x: int,
         y: int,
         align: Alignment,
-        color: tuple[int, int, int] = text_color,
-        bg_color: tuple[int, int, int] = bg_color,
+        color: tuple[int, int, int] = TEXT_COLOR,
+        bg_color: tuple[int, int, int] = BG_COLOR,
         margin=0,
         scale=Font.scale,
     ):

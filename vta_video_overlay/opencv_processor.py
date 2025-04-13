@@ -35,6 +35,7 @@ Processing Flow:
 """
 
 from pathlib import Path
+from typing import Final
 
 import cv2
 from loguru import logger as log
@@ -46,7 +47,7 @@ from vta_video_overlay.data_collections import ProcessProgress
 from vta_video_overlay.opencv_frame import Alignment, CVFrame
 from vta_video_overlay.video_data import VideoData
 
-CODEC = "mp4v"
+CODEC: Final = "mp4v"
 
 
 class CVProcessor(QtCore.QObject):

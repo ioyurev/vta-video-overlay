@@ -19,12 +19,13 @@ import configparser
 import os
 import sys
 from pathlib import Path
+from typing import Final
 
 import cv2
 from loguru import logger as log
 from PySide6 import QtCore
 
-DEFAULT_CONFIG = {
+DEFAULT_CONFIG: Final = {
     "Overlay": {
         "additional_text": " ",
         "additional_text_enabled": False,
@@ -32,8 +33,8 @@ DEFAULT_CONFIG = {
     }
 }
 
-text_color = (0, 255, 255)
-bg_color = (63, 63, 63)
+TEXT_COLOR: Final = (0, 255, 255)
+BG_COLOR: Final = (63, 63, 63)
 
 
 def set_appdata_folder() -> Path:

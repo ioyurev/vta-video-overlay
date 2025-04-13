@@ -37,6 +37,7 @@ Processing Flow:
 
 from io import StringIO
 from pathlib import Path
+from typing import Final
 
 import numpy as np
 import pandas as pd
@@ -45,10 +46,10 @@ from PySide6 import QtCore
 
 
 class Headers:
-    EMF = "EMF, mV"
-    TIME_RAW = "Time, s/86400"
-    TIME = "Time, s"
-    TEMP = "Temperature, °C"
+    EMF: Final = "EMF, mV"
+    TIME_RAW: Final = "Time, s/86400"
+    TIME: Final = "Time, s"
+    TEMP: Final = "Temperature, °C"
 
 
 def parse_lines(lines: list[str]) -> tuple[list[str], str, str, list[str]]:
