@@ -59,7 +59,9 @@ class Rectangle(QtWidgets.QGraphicsRectItem, QtCore.QObject):
         w, h = p2.x() - x, p2.y() - y
         return RectangleGeometry(int(x), int(y), int(w), int(h))
 
-    def setRect(self, x: float, y: float, w: float, h: float, move_points=False):
+    def setRect(
+        self, x: float, y: float, w: float, h: float, move_points: bool = False
+    ):
         super().setRect(x, y, w, h)
         if move_points:
             self.p1.setPos(x, y)

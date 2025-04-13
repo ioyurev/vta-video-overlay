@@ -144,7 +144,13 @@ class CVFrame:
             cv2.LINE_AA,
         )
 
-    def put_img(self, overlay_img: cv2.typing.MatLike, x, y, align=Alignment.TOP_LEFT):
+    def put_img(
+        self,
+        overlay_img: cv2.typing.MatLike,
+        x: int,
+        y: int,
+        align: Alignment = Alignment.TOP_LEFT,
+    ):
         """
         Накладывает изображение с учетом выравнивания и прозрачности
         :param overlay_img: Накладываемое изображение (BGR/BGRA)

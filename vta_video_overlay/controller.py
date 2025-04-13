@@ -10,7 +10,7 @@ from .pipeline import Pipeline
 from .tda_file import Data
 
 
-def pick_path_save():
+def pick_path_save() -> str:
     return QtWidgets.QFileDialog.getSaveFileName(
         filter=QtCore.QCoreApplication.tr("Video(*.mp4)")
     )[0]

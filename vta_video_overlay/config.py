@@ -36,7 +36,7 @@ text_color = (0, 255, 255)
 bg_color = (63, 63, 63)
 
 
-def set_appdata_folder():
+def set_appdata_folder() -> Path:
     app_folder = "vta_video_overlay"
     if sys.platform.startswith("linux"):
         appdata_folder = os.environ.get(
@@ -44,6 +44,8 @@ def set_appdata_folder():
         )
     else:
         appdata_folder = os.getenv("APPDATA")
+        if appdata_folder is None:
+            raise RuntimeError("Not found appdata folder")
     appdata_path = Path(os.path.join(appdata_folder, app_folder))
     if not os.path.exists(appdata_path):
         os.makedirs(appdata_path)

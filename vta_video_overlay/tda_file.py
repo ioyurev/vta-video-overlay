@@ -51,7 +51,7 @@ class Headers:
     TEMP = "Temperature, °C"
 
 
-def parse_lines(lines: list[str]):
+def parse_lines(lines: list[str]) -> tuple[list[str], str, str, list[str]]:
     for index, line in enumerate(lines):
         if line[0] == "<":
             if line.startswith("<NAME>"):

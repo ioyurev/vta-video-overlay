@@ -37,7 +37,7 @@ from PySide6 import QtCore
 from .data_collections import ProcessProgress
 
 
-def get_pts(packets) -> List[int]:
+def get_pts(packets: list[dict]) -> List[int]:
     pts: List[int] = []
 
     for packet in packets:

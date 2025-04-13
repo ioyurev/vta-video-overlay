@@ -55,8 +55,8 @@ class PILFrame:
         align: Alignment,
         color: tuple[int, int, int] = text_color,
         bg_color: tuple[int, int, int] = bg_color,
-        padding=5,
-        small=False,
+        padding: int = 5,
+        small: bool = False,
     ):
         if small:
             font = PILFONTSMALL

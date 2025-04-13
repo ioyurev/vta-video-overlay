@@ -81,7 +81,7 @@ class CropSelectionWindow(QtWidgets.QDialog, Ui_Dialog):
         self.viewport_resolution = (w, h)
         self.update_spinboxes()
 
-    def res_view2vid(self, w: int, h: int):
+    def res_view2vid(self, w: int, h: int) -> tuple[int, int]:
         new_w = int(w * self.video_resolution[0] / self.viewport_resolution[0])
         new_h = int(h * self.video_resolution[1] / self.viewport_resolution[1])
         return new_w, new_h
