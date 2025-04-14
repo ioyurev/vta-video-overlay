@@ -16,6 +16,7 @@ Implementation Highlights:
 """
 
 import configparser
+import locale
 import os
 import sys
 from pathlib import Path
@@ -32,9 +33,10 @@ DEFAULT_CONFIG: Final = {
         "logo_enabled": True,
         "main_text_size": 60,
         "additional_text_size": 40,
+        "language": locale.getlocale()[0].split("_")[0],
     }
 }
-
+log.debug(f"System language detected as {DEFAULT_CONFIG['Overlay']['language']}")
 TEXT_COLOR: Final = (0, 255, 255)
 BG_COLOR: Final = (63, 63, 63)
 
@@ -95,10 +97,14 @@ class Config:
         self.additional_text_size = self.config["Overlay"].getint(
             "additional_text_size", fallback=40
         )
+        self.language = self.config["Overlay"]["language"]
         log.info(QtCore.QCoreApplication.tr("Config loaded."))
         log.debug(f"additional_text_enabled: {self.additional_text_enabled}")
         log.debug(f"additional_text: {self.additional_text}")
         log.debug(f"logo_enabled: {self.logo_enabled}")
+        log.debug(f"main_text_size: {self.main_text_size}")
+        log.debug(f"additional_text_size: {self.additional_text_size}")
+        log.debug(f"language: {self.language}")
 
     def write_config(self):
         try:

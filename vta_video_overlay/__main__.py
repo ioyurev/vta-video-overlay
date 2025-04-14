@@ -1,4 +1,3 @@
-import locale
 import shutil
 import sys
 
@@ -6,6 +5,7 @@ from loguru import logger as log
 from PySide6 import QtCore, QtWidgets
 
 import vta_video_overlay.ui.resources_rc  # noqa: F401
+from vta_video_overlay.config import config
 from vta_video_overlay.controller import Controller
 from vta_video_overlay.main_window import MainWindow
 
@@ -32,9 +32,7 @@ class App(QtWidgets.QApplication):
         return True
 
     def set_language(self):
-        system_language = locale.getlocale()[0].split("_")[0]
-        if system_language == "Russian" or system_language == "ru":
-            log.debug("System language detected as Russian")
+        if config.language == "Russian" or config.language == "ru":
             translator = QtCore.QTranslator(parent=self)
             translator.load(":/assets/translation_ru.qm")
             self.installTranslator(translator)
