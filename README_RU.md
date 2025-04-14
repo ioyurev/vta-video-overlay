@@ -1,3 +1,4 @@
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15213766.svg)](https://doi.org/10.5281/zenodo.15213766)
 # VTA Video Overlay Tool
 
 ![Логотип приложения](assets/icon.png)

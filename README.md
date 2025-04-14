@@ -1,5 +1,5 @@
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15213766.svg)](https://doi.org/10.5281/zenodo.15213766)
 # VTA Video Overlay Tool
-
 ![Application Logo](assets/icon.png)
 
 Desktop application for overlaying VPTAnalyzer (VTA) sensor data onto video recordings. Supports visualization of EMF, temperature, and metadata with customizable overlay elements.
