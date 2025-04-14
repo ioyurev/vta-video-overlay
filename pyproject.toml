@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "vta-video-overlay"
-version = "0.4.0"
+version = "0.5.0"
 description = ""
 authors = ["Ilya O. Yurev <i.o.yurev@yandex.ru>"]
 readme = "README.md"
@@ -34,7 +34,7 @@ pyinstaller = "^6.5.0"
 isort = "^5.13.2"
 
 [tool.commitizen]
-version = "0.4.0"
+version = "0.5.0"
 version_files = [
     "vta_video_overlay/__version__.py",
     "pyproject.toml:version"
