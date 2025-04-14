@@ -1,3 +1,42 @@
+## 0.5.0 (2025-04-14)
+
+### Feat
+
+- **main_window.py**: replace logs folder menu action with config folder and update translations
+- **config.py**: move language detection to config, add configurable language option, use system locale as default
+- add configurable text size options for overlay
+- **translation**: updated
+- **opencv_processor.py**: added frame processing with PIL
+
+### Fix
+
+- **Pipeline**: initialize crop_rect with None in Pipeline class
+- **config.py**: add check for logo image loading failure to disable logo if not found
+- **config.py**: fixed read config file error
+- more exceptions handling
+- **video_data.py**: fixed expception for not defined temperature list
+- **opencv_processor.py**: fixed text rendering when processing video without calibration
+- **worker.py**: disabled exceptions handling for developening purposes
+- fixed ghost selection
+- fixed QObject parent warning
+- **opencv_processor.py**: fixed additional rendering while it disabled
+- fixed import exception for pyinstaller build
+- **data_collections.py**: fixed startup error for pyinstaller build
+
+### Refactor
+
+- switch from relative to absolute imports
+- refine logging levels with additional debug messages
+- **pipeline.py**: split execute method into private helper methods
+- add final type hints
+- dead code removed
+- **config.py**: some configs moved to config module
+- **CVProcessor**: move progress signal to cvprocessor class, connect signal in worker, adjust constructor and signal emission
+- trim disabled by default
+- refactored text rendering
+- refactored RectangeGeometry usage
+- changed interaction with config
+
 ## 0.4.0 (2024-04-20)
 
 ### Feat
