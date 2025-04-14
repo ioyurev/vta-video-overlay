@@ -23,19 +23,27 @@ Text Rendering Features:
 - Color inversion protection (light/dark themes)
 """
 
+from loguru import logger as log
 from PIL import Image, ImageDraw, ImageFont
 
-from vta_video_overlay.config import BG_COLOR, TEXT_COLOR
+from vta_video_overlay.config import BG_COLOR, TEXT_COLOR, config
 from vta_video_overlay.enums import Alignment
 
 try:
-    PILFONT = ImageFont.truetype("times.ttf", 60)
-    PILFONTSMALL = ImageFont.truetype("times.ttf", 40)
+    PILFONT = ImageFont.truetype("times.ttf", config.main_text_size)
+    PILFONTSMALL = ImageFont.truetype("times.ttf", config.additional_text_size)
 except Exception as e:
-    print(f"Failed to load font: {e}")
-    print("Fallback to default font")
-    PILFONT = ImageFont.load_default(size=60)
-    PILFONTSMALL = ImageFont.load_default(size=40)
+    try:
+        log.error(f"Failed to load font: {e}")
+        PILFONT = ImageFont.truetype("DejaVuSerif.ttf", config.main_text_size)
+        PILFONTSMALL = ImageFont.truetype(
+            "DejaVuSerif.ttf", config.additional_text_size
+        )
+    except Exception as e:
+        log.error(f"Failed to load font: {e}")
+        log.error("Fallback to default font")
+        PILFONT = ImageFont.load_default(size=config.main_text_size)
+        PILFONTSMALL = ImageFont.load_default(size=config.additional_text_size)
 
 
 class PILFrame:

@@ -30,6 +30,8 @@ DEFAULT_CONFIG: Final = {
         "additional_text": " ",
         "additional_text_enabled": False,
         "logo_enabled": True,
+        "main_text_size": 60,
+        "additional_text_size": 40,
     }
 }
 
@@ -87,6 +89,12 @@ class Config:
             "additional_text_enabled"
         )
         self.additional_text = self.config["Overlay"]["additional_text"]
+        self.main_text_size = self.config["Overlay"].getint(
+            "main_text_size", fallback=60
+        )
+        self.additional_text_size = self.config["Overlay"].getint(
+            "additional_text_size", fallback=40
+        )
         log.info(QtCore.QCoreApplication.tr("Config loaded."))
         log.debug(f"additional_text_enabled: {self.additional_text_enabled}")
         log.debug(f"additional_text: {self.additional_text}")
