@@ -213,7 +213,11 @@ Temperature (C): {temp:.0f}</source>
     </message>
     <message>
         <source>Open logs folder</source>
-        <translation>Открыть папку журналов</translation>
+        <translation type="vanished">Открыть папку журналов</translation>
+    </message>
+    <message>
+        <source>Open config folder</source>
+        <translation>Открыть папку конфигурации</translation>
     </message>
     <message>
         <source>Crop</source>

@@ -69,10 +69,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.actionAbout.triggered.connect(self.show_about)
         self.menubar.addAction(self.actionAbout)
 
-        self.explorer_action = QtGui.QAction(self.tr("Open logs folder"), self)
-        self.explorer_action.triggered.connect(
-            lambda: open_file_explorer(appdata_path / "logs")
-        )
+        self.explorer_action = QtGui.QAction(self.tr("Open config folder"), self)
+        self.explorer_action.triggered.connect(lambda: open_file_explorer(appdata_path))
         self.menubar.addAction(self.explorer_action)
 
         self.crop_action = QtGui.QAction(self.tr("Crop"), self)
