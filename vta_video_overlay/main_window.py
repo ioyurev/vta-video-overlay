@@ -35,7 +35,7 @@ from vta_video_overlay.config import appdata_path
 from vta_video_overlay.controller import Controller
 from vta_video_overlay.crop_selection_widgets import RectangleGeometry
 from vta_video_overlay.data_collections import ProcessProgress, ProcessResult
-from vta_video_overlay.tda_file import Data
+from vta_video_overlay.data_file import Data
 from vta_video_overlay.ui.MainWindow import Ui_MainWindow
 
 

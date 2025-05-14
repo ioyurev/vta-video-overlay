@@ -42,9 +42,9 @@ from PySide6 import QtCore
 
 from vta_video_overlay.crop_selection_widgets import RectangleGeometry
 from vta_video_overlay.data_collections import ProcessProgress, ProcessResult
+from vta_video_overlay.data_file import Data
 from vta_video_overlay.ffmpeg_utils import FFmpeg
 from vta_video_overlay.opencv_processor import CVProcessor
-from vta_video_overlay.tda_file import Data
 from vta_video_overlay.video_data import VideoData
 
 

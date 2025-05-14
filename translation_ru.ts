@@ -113,7 +113,11 @@ Temperature (C): {temp:.0f}</source>
     <name>Controller</name>
     <message>
         <source>VPTAnalizer file(*.tda)</source>
-        <translation>Файл VPTAnalizer(*.tda)</translation>
+        <translation type="vanished">Файл VPTAnalizer(*.tda)</translation>
+    </message>
+    <message>
+        <source>Data files (*.tda *.vtaz)</source>
+        <translation>Файлы данных (*.tda *.vtaz)</translation>
     </message>
     <message>
         <source>TDA file load failed | Path: {} | Temp Enabled: {} | Error: {}</source>

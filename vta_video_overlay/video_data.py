@@ -25,8 +25,8 @@ import numpy as np
 from loguru import logger as log
 from PySide6 import QtCore
 
+from vta_video_overlay.data_file import Data
 from vta_video_overlay.ffmpeg_utils import FFmpeg
-from vta_video_overlay.tda_file import Data
 
 
 class VideoData(QtCore.QObject):
@@ -41,10 +41,8 @@ class VideoData(QtCore.QObject):
         log.info(
             self.tr("Number of video frames: {len}").format(len=len(self.timestamps))
         )
-        self.emf_aligned = np.interp(
-            self.timestamps, self.data.data_time, self.data.data_emf
-        )
+        self.emf_aligned = np.interp(self.timestamps, self.data.time, self.data.emf)
         if self.temp_enabled:
             self.temp_aligned = np.interp(
-                self.timestamps, self.data.data_time, self.data.data_temp
+                self.timestamps, self.data.time, self.data.temp
             )

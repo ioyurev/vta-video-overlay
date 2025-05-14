@@ -23,9 +23,9 @@ from PySide6 import QtCore, QtWidgets
 
 from vta_video_overlay.crop_selection_widgets import RectangleGeometry
 from vta_video_overlay.crop_selection_window import CropSelectionWindow
+from vta_video_overlay.data_file import Data
 from vta_video_overlay.ffmpeg_utils import FFmpeg
 from vta_video_overlay.pipeline import Pipeline
-from vta_video_overlay.tda_file import Data
 
 
 def pick_path_save() -> str:
@@ -59,10 +59,19 @@ class Controller(QtCore.QObject):
     @QtCore.Slot()
     def pick_tda(self, temp_enabled: bool):
         try:
-            path = pick_path_open(filter=self.tr("VPTAnalizer file(*.tda)"))
+            file_filter = self.tr("Data files (*.tda *.vtaz)")
+            path = pick_path_open(filter=file_filter)
             if path == "":
                 return
-            self.pipeline.data = Data(path=Path(path), temp_enabled=temp_enabled)
+            path = Path(path)
+            if path.suffix.lower() == ".tda":
+                self.pipeline.data = Data.from_tda_file(
+                    path=path, temp_enabled=temp_enabled
+                )
+            elif path.suffix.lower() == ".vtaz":
+                self.pipeline.data = Data.from_vtaz_file(
+                    path=path, temp_enabled=temp_enabled
+                )
             return self.pipeline.data
         except Exception as e:
             log.error(
