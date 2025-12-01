@@ -7,6 +7,7 @@ from PySide6 import QtCore, QtWidgets
 import vta_video_overlay.ui.resources_rc  # noqa: F401
 from vta_video_overlay.config import config
 from vta_video_overlay.controller import Controller
+from vta_video_overlay.excepthook import set_excepthook
 from vta_video_overlay.main_window import MainWindow
 
 
@@ -40,6 +41,7 @@ class App(QtWidgets.QApplication):
     def run(self):
         if not self.check_environment():
             return
+        set_excepthook()
         self.set_language()
         c = Controller()
         w = MainWindow(controller=c)

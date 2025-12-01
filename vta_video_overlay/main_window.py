@@ -36,6 +36,7 @@ from vta_video_overlay.controller import Controller
 from vta_video_overlay.crop_selection_widgets import RectangleGeometry
 from vta_video_overlay.data_collections import ProcessProgress, ProcessResult
 from vta_video_overlay.data_file import Data
+from vta_video_overlay.file_widget_base import FileDataWidgetBase
 from vta_video_overlay.ui.MainWindow import Ui_MainWindow
 
 
@@ -58,7 +59,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.controller.setParent(self)
         self.controller.crop_done.connect(self.crop_done)
 
-        self.btn_tda.clicked.connect(self.pick_tda)
+        self.btn_tda.clicked.connect(self.pick_file)
         self.btn_video.clicked.connect(self.pick_video)
         self.btn_convert.clicked.connect(self.overlay)
         self.statusbar.addWidget(
@@ -85,23 +86,24 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         convert_excel = self.cb_excel.isChecked()
         self.controller.pipeline.stage_progress.connect(self.update_progressbar)
         self.controller.pipeline.stage_finished.connect(self.stage_finished)
+        self.controller.pipeline.work_finished.disconnect()
         self.controller.pipeline.work_finished.connect(self.finished)
-        self.gui_to_data()
         log.info(self.tr("Started video processing"))
         self.controller.overlay(convert_excel=convert_excel)
 
-    @QtCore.Slot()
+    # @QtCore.Slot()
     def crop_done(self, rect: RectangleGeometry):
         log.info(self.tr("Crop done: {xywh}").format(xywh=rect))
         w = rect.w * self.video_preview.height() // rect.h
         self.video_preview.setMinimumWidth(w)
 
     @QtCore.Slot()
-    def pick_tda(self):
-        data = self.controller.pick_tda(temp_enabled=self.cb_temp.isChecked())
-        if data is not None:
+    def pick_file(self):
+        result = self.controller.pick_file()
+        if result is not None:
+            data, widget = result
             log.info(self.tr("Selected tda file: {path}").format(path=data.path))
-            self.data_to_gui(data=data)
+            self.data_to_gui(data=data, widget=widget)
 
     @QtCore.Slot()
     def pick_video(self):
@@ -125,47 +127,34 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.btn_convert.setEnabled(val)
         self.edit_tda.setEnabled(val)
         self.edit_video.setEnabled(val)
-        self.edit_operator.setEnabled(val)
-        self.edit_sample.setEnabled(val)
-        self.edit_a0.setEnabled(val)
-        self.edit_a1.setEnabled(val)
-        self.edit_a2.setEnabled(val)
-        self.edit_a3.setEnabled(val)
-        self.cb_temp.setEnabled(val)
         self.cb_excel.setEnabled(val)
 
-    def data_to_gui(self, data: Data):
+    def data_to_gui(self, data: Data, widget: FileDataWidgetBase):
         self.edit_tda.setText(str(data.path))
-        self.edit_operator.setText(data.operator)
-        self.edit_sample.setText(data.sample)
-        self.edit_a0.setText(str(data.coeff[3]))
-        self.edit_a1.setText(str(data.coeff[2]))
-        self.edit_a2.setText(str(data.coeff[1]))
-        self.edit_a3.setText(str(data.coeff[0]))
 
-    def gui_to_data(self):
-        # Polynomial coefficients stored in reverse order (a3->a0)
-        # to match numpy.poly1d's coefficient ordering convention
-        coeff = [
-            self.edit_a3.text(),
-            self.edit_a2.text(),
-            self.edit_a1.text(),
-            self.edit_a0.text(),
-        ]
-        self.controller.pipeline.set_metadata(
-            op=self.edit_operator.text(),
-            samplename=self.edit_sample.text(),
-            coeff=coeff,
-            temp_enabled=self.cb_temp.isChecked(),
-        )
+        # Ensure widget_container has a layout
+        container_layout = self.widget_container.layout()
+        if container_layout is None:
+            container_layout = QtWidgets.QVBoxLayout(self.widget_container)
+            container_layout.setContentsMargins(0, 0, 0, 0)
+        else:
+            # Clear previous widgets from layout
+            while container_layout.count():
+                child = container_layout.takeAt(0)
+                if child and child.widget():
+                    child.widget().deleteLater()
 
-    @QtCore.Slot(ProcessResult)
+        # Add new widget if provided
+        if widget:
+            container_layout.addWidget(widget)
+
+    # @QtCore.Slot(ProcessResult)
     def finished(self, tpl: ProcessResult):
         self.raise_()
         if tpl.is_success:
             QtWidgets.QMessageBox.information(
                 self, "VTA video overlay", self.tr("Video processing completed")
-            )
+            )  # type: ignore
         else:
             log.error(tpl.traceback_msg)
             QtWidgets.QMessageBox.critical(
@@ -178,7 +167,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.set_stuff_enabled(True)
         self.progressbar.setValue(0)
 
-    @QtCore.Slot(ProcessProgress)
+    # @QtCore.Slot(ProcessProgress)
     def update_progressbar(self, progress: ProcessProgress):
         if progress.frame is not None:
             try:

@@ -24,7 +24,6 @@ from typing import Final
 
 import cv2
 from loguru import logger as log
-from PySide6 import QtCore
 
 DEFAULT_CONFIG: Final = {
     "Overlay": {
@@ -33,7 +32,7 @@ DEFAULT_CONFIG: Final = {
         "logo_enabled": True,
         "main_text_size": 60,
         "additional_text_size": 40,
-        "language": locale.getlocale()[0].split("_")[0],
+        "language": locale.getlocale()[0].split("_")[0],  # type: ignore
     }
 }
 log.debug(f"System language detected as {DEFAULT_CONFIG['Overlay']['language']}")
@@ -70,11 +69,7 @@ class Config:
     def read_config(self):
         self.config = configparser.ConfigParser()
         if not self.config.read(self.path, encoding="utf-8"):
-            log.warning(
-                QtCore.QCoreApplication.tr(
-                    "Config file not found or corrupted. Creating new config file."
-                )
-            )
+            log.warning("Config file not found or corrupted. Creating new config file.")
             self.config.read_dict(DEFAULT_CONFIG)
             self.write_config()
 
@@ -98,7 +93,7 @@ class Config:
             "additional_text_size", fallback=40
         )
         self.language = self.config["Overlay"]["language"]
-        log.info(QtCore.QCoreApplication.tr("Config loaded."))
+        log.info("Config loaded.")
         log.debug(f"additional_text_enabled: {self.additional_text_enabled}")
         log.debug(f"additional_text: {self.additional_text}")
         log.debug(f"logo_enabled: {self.logo_enabled}")
@@ -111,9 +106,7 @@ class Config:
             with open(self.path, "w") as configfile:
                 self.config.write(configfile)
             log.info(
-                QtCore.QCoreApplication.tr(
-                    "Config updated | Logo Enabled: {} | Text Enabled: {}"
-                ),
+                "Config updated | Logo Enabled: {} | Text Enabled: {}",
                 self.logo_enabled,
                 self.additional_text_enabled,
             )

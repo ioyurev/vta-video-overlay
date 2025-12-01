@@ -38,16 +38,16 @@ class RectangleGeometry(NamedTuple):
 class Rectangle(QtWidgets.QGraphicsRectItem, QtCore.QObject):
     def __init__(self, rec_x: float, rec_y: float, rec_w: float, rec_h: float):
         super().__init__(rec_x, rec_y, rec_w, rec_h)
-        self.setBrush(QtCore.Qt.green)
+        self.setBrush(QtCore.Qt.GlobalColor.green)
         self.setOpacity(0.25)
 
         self.p1 = QtWidgets.QGraphicsEllipseItem(-5, -5, 10, 10)
         self.p1.setPos(rec_x, rec_y)
-        self.p1.setBrush(QtCore.Qt.red)
+        self.p1.setBrush(QtCore.Qt.GlobalColor.red)
 
         self.p2 = QtWidgets.QGraphicsEllipseItem(-5, -5, 10, 10)
         self.p2.setPos(rec_x + rec_w, rec_y + rec_h)
-        self.p2.setBrush(QtCore.Qt.blue)
+        self.p2.setBrush(QtCore.Qt.GlobalColor.blue)
 
     def get_geometry(self) -> RectangleGeometry:
         p1 = self.boundingRect().topLeft()

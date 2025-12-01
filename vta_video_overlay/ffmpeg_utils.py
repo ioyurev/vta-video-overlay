@@ -122,14 +122,14 @@ class FFmpeg(QtCore.QObject):
         self,
         path_input: Path,
         path_output: Path,
-        signal: QtCore.Signal,
+        signal: QtCore.SignalInstance,
     ):
         cmd = ["ffmpeg", "-i", str(path_input), str(path_output)]
         ff = FfmpegProgress(cmd)
         log.info(self.tr("Converting file: {path}").format(path=path_input))
         log.info(self.tr("Saving to: {path}").format(path=path_output))
         for ff_progress in ff.run_command_with_progress():
-            signal.emit(ProcessProgress(value=ff_progress))
+            signal.emit(ProcessProgress(value=int(ff_progress)))
         log.info(self.tr("ffmpeg conversion finished."))
 
     def check_for_packets(self, video_path: Path) -> bool:

@@ -31,10 +31,10 @@ Processing Pipeline:
 Typical Usage:
     # Load from legacy .tda
     data = Data.from_tda_file(Path("measurement.tda"))
-    
-    # Load from modern .vtaz 
+
+    # Load from modern .vtaz
     data = Data.from_vtaz_file(Path("experiment.vtaz"))
-    
+
     # Generate analysis report
     data.to_excel(Path("report.xlsx"))
 
@@ -57,65 +57,31 @@ import pandas as pd
 from loguru import logger as log
 from PySide6 import QtCore
 
-from vta_video_overlay.tda_file import Headers, load_tda
-from vta_video_overlay.vtaz_file import load_vtaz
+from vta_video_overlay.tda_headers import Headers
 
 
 class Data(QtCore.QObject):
     operator: str
     sample: str
-    coeff: list[str]
     path: Path
     time: np.ndarray
     emf: np.ndarray
-    date_temp: np.ndarray
-    temp_enabled: bool
-
-    @staticmethod
-    def from_vtaz_file(path: Path, temp_enabled=True) -> "Data":
-        self = Data()
-        self.path = path
-        metadata, time, emf, coeff = load_vtaz(path=path)
-        self.sample = metadata.sample
-        self.operator = metadata.operator
-        self.time = np.array(time)
-        self.emf = np.array(emf)
-        self.coeff = coeff
-        self.temp_enabled = temp_enabled
-        self.recalc_temp()
-        return self
-
-    @staticmethod
-    def from_tda_file(path: Path, temp_enabled=True) -> "Data":
-        self = Data()
-        self.path = path
-        self.sample, self.operator, self.coeff, self.time, self.emf = load_tda(
-            path=path
-        )
-        self.temp_enabled = temp_enabled
-        self.recalc_temp()
-        return self
-
-    def recalc_temp(self):
-        if self.temp_enabled:
-            np_coeff = np.array(self.coeff, dtype=float)
-            xn = np.poly1d(np_coeff)
-            self.temp = xn(self.emf)
+    temp: np.ndarray | None
 
     def to_excel(self, path: Path):
         log.info(self.tr("Saving .xlsx: {path}").format(path=path))
         df = pd.DataFrame()
         df[Headers.TIME] = self.time.round(3)
         df[Headers.EMF] = self.emf.round(3)
-        if self.temp_enabled:
+        if self.temp is not None:
             df[Headers.TEMP] = self.temp.round()
         writer = pd.ExcelWriter(path, engine="xlsxwriter")
         sheet_name = "Sheet1"
         df.to_excel(excel_writer=writer, index=False, sheet_name=sheet_name)
         workbook = writer.book
         worksheet = writer.sheets[sheet_name]
-        chart = workbook.add_chart({"type": "scatter", "subtype": "straight"})
-        if self.temp_enabled:
+        chart = workbook.add_chart({"type": "scatter", "subtype": "straight"})  # type: ignore
+        if self.temp is not None:
             column = "C"
             yaxis = Headers.TEMP
         else:

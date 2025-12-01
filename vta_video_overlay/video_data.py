@@ -36,13 +36,17 @@ class VideoData(QtCore.QObject):
         self.operator = data.operator
         self.sample = data.sample
         self.path = video_path
-        self.temp_enabled = data.temp_enabled
+        self.temp_aligned: np.ndarray | None
         self.timestamps = np.array(FFmpeg().get_timestamps(self.path)) / 1000
         log.info(
             self.tr("Number of video frames: {len}").format(len=len(self.timestamps))
         )
         self.emf_aligned = np.interp(self.timestamps, self.data.time, self.data.emf)
-        if self.temp_enabled:
+        if data.temp is not None:
             self.temp_aligned = np.interp(
-                self.timestamps, self.data.time, self.data.temp
+                self.timestamps,
+                self.data.time,
+                self.data.temp,  # type: ignore
             )
+        else:
+            self.temp_aligned = None

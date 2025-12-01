@@ -25,16 +25,15 @@ from vta_video_overlay.crop_selection_widgets import RectangleGeometry
 from vta_video_overlay.crop_selection_window import CropSelectionWindow
 from vta_video_overlay.data_file import Data
 from vta_video_overlay.ffmpeg_utils import FFmpeg
+from vta_video_overlay.file_loader import load_file_with_widget
 from vta_video_overlay.pipeline import Pipeline
 
 
 def pick_path_save() -> str:
-    return QtWidgets.QFileDialog.getSaveFileName(
-        filter=QtCore.QCoreApplication.tr("Video(*.mp4)")
-    )[0]
+    return QtWidgets.QFileDialog.getSaveFileName(filter="Video(*.mp4)")[0]
 
 
-def pick_path_open(filter=QtCore.QCoreApplication.tr("All files(*.*)")):
+def pick_path_open(filter="All files(*.*)"):
     return QtWidgets.QFileDialog.getOpenFileName(filter=filter)[0]
 
 
@@ -57,53 +56,24 @@ class Controller(QtCore.QObject):
         self.crop_done.emit(crop_rect)
 
     @QtCore.Slot()
-    def pick_tda(self, temp_enabled: bool):
-        try:
-            file_filter = self.tr("Data files (*.tda *.vtaz)")
-            path = pick_path_open(filter=file_filter)
-            if path == "":
-                return
-            path = Path(path)
-            if path.suffix.lower() == ".tda":
-                self.pipeline.data = Data.from_tda_file(
-                    path=path, temp_enabled=temp_enabled
-                )
-            elif path.suffix.lower() == ".vtaz":
-                self.pipeline.data = Data.from_vtaz_file(
-                    path=path, temp_enabled=temp_enabled
-                )
-            return self.pipeline.data
-        except Exception as e:
-            log.error(
-                self.tr(
-                    "TDA file load failed | Path: {} | Temp Enabled: {} | Error: {}"
-                ),
-                path,
-                temp_enabled,
-                e,
-            )
-            QtWidgets.QMessageBox.critical(
-                self,
-                "Error",
-                self.tr("Failed to read TDA file."),
-            )
+    def pick_file(self) -> tuple[Data, object] | None:
+        file_filter = self.tr("Data files (*.tda *.vtaz)")
+        path = pick_path_open(filter=file_filter)
+        if path == "":
+            return None
+        path = Path(path)
+        data, widget = load_file_with_widget(path=path)
+        self.pipeline.data = data
+        return data, widget
 
     @QtCore.Slot()
     def pick_video(self):
         path = pick_path_open(filter=self.tr("Video(*.asf *.mp4);;All files(*.*)"))
         if path == "":
             return
-        try:
-            size = FFmpeg().get_resolution(video_path=path)
-            self.pipeline.video_path_input = Path(path)
-            return path, size
-        except Exception as e:
-            log.error(self.tr("Video file load failed | Path: {} | Error: {}"), path, e)
-            QtWidgets.QMessageBox.critical(
-                self,
-                "Error",
-                self.tr("Failed to read video file."),
-            )
+        size = FFmpeg().get_resolution(video_path=path)
+        self.pipeline.video_path_input = Path(path)
+        return path, size
 
     @QtCore.Slot()
     def overlay(self, convert_excel: bool = True):
@@ -116,16 +86,6 @@ class Controller(QtCore.QObject):
             self.tr("Operator: {operator}").format(operator=self.pipeline.data.operator)
         )
         log.info(self.tr("Sample: {sample}").format(sample=self.pipeline.data.sample))
-        log.info(
-            self.tr("Temperature calibration enabled: {bool}").format(
-                bool=self.pipeline.data.temp_enabled
-            )
-        )
-        log.info(
-            self.tr("Polynomial coefficients: {coeff}").format(
-                coeff=self.pipeline.data.coeff
-            )
-        )
         self.pipeline.video_path_output = savepath
         if convert_excel:
             excelpath = Path(self.pipeline.data.path).with_suffix(".xlsx")

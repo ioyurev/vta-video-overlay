@@ -45,7 +45,7 @@ class CropSelectionWindow(QtWidgets.QDialog, Ui_Dialog):
         self.graphicsView.set_file(file)
         self.video_resolution = FFmpeg().get_resolution(file)
 
-    @QtCore.Slot(int)
+    # @QtCore.Slot(int)
     def update_rectangle(self, _):
         if not self.spinboxes_signal_enabled:
             return

@@ -54,7 +54,6 @@ class CVProcessor(QtCore.QObject):
         self.video_data = video_data
         self.path_output = path_output
         self.path_input = video_data.path
-        self.temp_enabled = video_data.temp_enabled
         self.crop_rect = crop_rect
 
     def loop(self):
@@ -74,7 +73,7 @@ class CVProcessor(QtCore.QObject):
             if frame_index < 0:
                 continue
 
-            if self.temp_enabled:
+            if self.video_data.temp_aligned is not None:
                 temp = self.video_data.temp_aligned[frame_index]
             else:
                 temp = None
@@ -113,7 +112,7 @@ class CVProcessor(QtCore.QObject):
         log.info(f"FPS: {fps}")
         self.video_output = cv2.VideoWriter(
             filename=str(self.path_output),
-            fourcc=cv2.VideoWriter_fourcc(*CODEC),
+            fourcc=cv2.VideoWriter_fourcc(*CODEC),  # type: ignore
             fps=fps,
             frameSize=size,
         )
@@ -145,12 +144,12 @@ def make_frame(
         )
     pilframe = cvframe.to_pilframe()
     bbox = pilframe.put_text(
-        text=QtCore.QCoreApplication.tr("t(s): {time:.1f}").format(time=time),
+        text=QtCore.QCoreApplication.tr("t(s): {time:.1f}").format(time=time),  # type: ignore
         xy=(5, 5),
         align=Alignment.TOP_LEFT,
     )
     bbox = pilframe.put_text(
-        text=QtCore.QCoreApplication.tr("E(mV): {emf:.2f}").format(emf=emf),
+        text=QtCore.QCoreApplication.tr("E(mV): {emf:.2f}").format(emf=emf),  # type: ignore
         xy=(5, 10 + bbox[3]),
         align=Alignment.TOP_LEFT,
     )
@@ -160,7 +159,7 @@ def make_frame(
             xy=(5, 10 + bbox[3]),
             align=Alignment.TOP_LEFT,
         )
-    if config.additional_text_enabled:
+    if add_text is not None:
         bbox = pilframe.put_text(
             text=add_text,
             xy=(5, cvframe.size.height - 5),

@@ -48,8 +48,8 @@ from vta_video_overlay.opencv_processor import CVProcessor
 from vta_video_overlay.video_data import VideoData
 
 
-def clean(tempdir: str):
-    log.info(QtCore.QCoreApplication.tr("Cleaning {tempdir}").format(tempdir=tempdir))
+def clean(tempdir: Path):
+    log.info("Cleaning {tempdir}".format(tempdir=tempdir))
     if os.path.exists(tempdir):
         shutil.rmtree(tempdir)
 
@@ -117,16 +117,3 @@ class Pipeline(QtCore.QThread):
             path_output=self.video_path_output,
             signal=self.stage_progress,
         )
-
-    def set_metadata(
-        self,
-        op: str,
-        samplename: str,
-        coeff: list[str],
-        temp_enabled: bool,
-    ):
-        self.data.operator = op
-        self.data.sample = samplename
-        self.data.temp_enabled = temp_enabled
-        self.data.coeff = coeff
-        self.data.recalc_temp()

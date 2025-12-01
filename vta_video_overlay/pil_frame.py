@@ -47,7 +47,7 @@ except Exception as e:
 
 
 class PILFrame:
-    def __init__(self, image: Image):
+    def __init__(self, image: Image.Image):
         self.image = image
 
     def put_text(
@@ -75,6 +75,7 @@ class PILFrame:
             anchor = "rt"
 
         bbox = draw.textbbox(xy=xy, text=text, anchor=anchor, font=font)
+        bbox = (int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3]))
         padding = 5
         expanded_bbox = (
             bbox[0] - padding,  # left
