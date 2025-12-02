@@ -28,10 +28,20 @@ class RectangleGeometry(NamedTuple):
     h: int
 
     def safe_bound(self, max_width: int, max_height: int):
+        # Ensure minimum dimensions to prevent invalid crop regions
+        min_dimension = 10  # Minimum 10 pixels for width and height
+
         x = max(0, self.x)
         y = max(0, self.y)
-        w = min(max_width, self.w)
-        h = min(max_height, self.h)
+        w = max(min_dimension, min(max_width - x, self.w))
+        h = max(min_dimension, min(max_height - y, self.h))
+
+        # Final validation to ensure we don't exceed boundaries
+        w = min(w, max_width - x)
+        h = min(h, max_height - y)
+        w = max(min_dimension, w)
+        h = max(min_dimension, h)
+
         return RectangleGeometry(x, y, w, h)
 
 

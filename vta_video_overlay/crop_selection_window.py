@@ -51,17 +51,19 @@ class CropSelectionWindow(QtWidgets.QDialog, Ui_Dialog):
             return
         x, y = self.spinBox_x.value(), self.spinBox_y.value()
         w, h = self.spinBox_w.value(), self.spinBox_h.value()
-        self.graphicsView.rectangle.setRect(x, y, w, h, move_points=True)
+        if hasattr(self.graphicsView, "rectangle"):
+            self.graphicsView.rectangle.setRect(x, y, w, h, move_points=True)
 
     @QtCore.Slot()
     def update_spinboxes(self):
-        rect = self.graphicsView.rectangle.get_geometry()
-        self.spinboxes_signal_enabled = False
-        self.spinBox_x.setValue(rect.x)
-        self.spinBox_y.setValue(rect.y)
-        self.spinBox_w.setValue(rect.w)
-        self.spinBox_h.setValue(rect.h)
-        self.spinboxes_signal_enabled = True
+        if hasattr(self.graphicsView, "rectangle"):
+            rect = self.graphicsView.rectangle.get_geometry()
+            self.spinboxes_signal_enabled = False
+            self.spinBox_x.setValue(rect.x)
+            self.spinBox_y.setValue(rect.y)
+            self.spinBox_w.setValue(rect.w)
+            self.spinBox_h.setValue(rect.h)
+            self.spinboxes_signal_enabled = True
 
     @QtCore.Slot(int)
     def slider_released(self):
@@ -77,7 +79,12 @@ class CropSelectionWindow(QtWidgets.QDialog, Ui_Dialog):
         self.spinBox_y.setMaximum(h)
         self.spinBox_w.setMaximum(w)
         self.spinBox_h.setMaximum(h)
+        # Set minimum values to prevent invalid crop regions
+        self.spinBox_w.setMinimum(10)
+        self.spinBox_h.setMinimum(10)
+        self.spinboxes_signal_enabled = False
         self.graphicsView.init_selection_items(w=w, h=h)
+        self.spinboxes_signal_enabled = True
         self.setMinimumSize(int(w * 1.1), int(h * 1.4))
         self.viewport_resolution = (w, h)
         self.update_spinboxes()

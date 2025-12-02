@@ -31,9 +31,6 @@ Implementation Details:
 - Implements Qt's thread-safe signal emission
 """
 
-import os
-import shutil
-import tempfile
 import traceback
 from pathlib import Path
 
@@ -45,13 +42,8 @@ from vta_video_overlay.data_collections import ProcessProgress, ProcessResult
 from vta_video_overlay.data_file import Data
 from vta_video_overlay.ffmpeg_utils import FFmpeg
 from vta_video_overlay.opencv_processor import CVProcessor
+from vta_video_overlay.temp_dir_manager import TempDirManager
 from vta_video_overlay.video_data import VideoData
-
-
-def clean(tempdir: Path):
-    log.info("Cleaning {tempdir}".format(tempdir=tempdir))
-    if os.path.exists(tempdir):
-        shutil.rmtree(tempdir)
 
 
 class Pipeline(QtCore.QThread):
@@ -71,11 +63,9 @@ class Pipeline(QtCore.QThread):
             self.work_finished.emit(
                 ProcessResult(is_success=False, traceback_msg=traceback.format_exc())
             )
-        finally:
-            clean(tempdir=self.tempdir)
 
     def execute(self):
-        self.tempdir = Path(tempfile.mkdtemp())
+        self.tempdir = TempDirManager.get_temp_dir()
         tmpfile1 = Path(self.tempdir / "out1.mp4")
         tmpfile2 = Path(self.tempdir / "out2.mp4")
 

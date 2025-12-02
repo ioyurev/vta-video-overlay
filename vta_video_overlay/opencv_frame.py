@@ -73,7 +73,15 @@ class CVFrame:
         self._update_size()
 
     def crop_by_rect(self, rect: RectangleGeometry):
-        self.crop(rect.x, rect.y, rect.w, rect.h)
+        # Validate crop parameters to prevent invalid operations
+        h, w = self.image.shape[:2]
+        # Ensure crop coordinates are within image bounds
+        x = max(0, min(rect.x, w - 1))
+        y = max(0, min(rect.y, h - 1))
+        # Ensure crop dimensions are positive and don't exceed image bounds
+        crop_w = max(10, min(rect.w, w - x))  # Minimum 10 pixels width
+        crop_h = max(10, min(rect.h, h - y))  # Minimum 10 pixels height
+        self.crop(x, y, crop_w, crop_h)
 
     def make_border(
         self, top=0, bottom=0, left=0, right=0, color: tuple[int, int, int] = (0, 0, 0)

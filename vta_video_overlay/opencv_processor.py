@@ -104,7 +104,15 @@ class CVProcessor(QtCore.QObject):
         frame_width = int(self.video_input.get(3))
         frame_height = int(self.video_input.get(4))
         if self.crop_rect is not None:
-            size = (self.crop_rect.w, self.crop_rect.h)
+            # Validate crop rectangle dimensions to prevent invalid video creation
+            crop_w = max(10, min(self.crop_rect.w, frame_width))
+            crop_h = max(10, min(self.crop_rect.h, frame_height))
+            # Ensure crop coordinates don't exceed frame boundaries
+            crop_x = min(self.crop_rect.x, frame_width - crop_w)
+            crop_y = min(self.crop_rect.y, frame_height - crop_h)
+            size = (crop_w, crop_h)
+            # Update crop_rect with validated values
+            self.crop_rect = RectangleGeometry(crop_x, crop_y, crop_w, crop_h)
         else:
             size = (frame_width, frame_height)
         fps = self.video_input.get(cv2.CAP_PROP_FPS)

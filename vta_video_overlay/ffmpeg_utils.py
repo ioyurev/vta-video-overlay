@@ -124,7 +124,15 @@ class FFmpeg(QtCore.QObject):
         path_output: Path,
         signal: QtCore.SignalInstance,
     ):
-        cmd = ["ffmpeg", "-i", str(path_input), str(path_output)]
+        cmd = [
+            "ffmpeg",
+            "-i",
+            str(path_input),
+            "-strict",
+            "experimental",
+            "-y",  # Overwrite output file if exists
+            str(path_output),
+        ]
         ff = FfmpegProgress(cmd)
         log.info(self.tr("Converting file: {path}").format(path=path_input))
         log.info(self.tr("Saving to: {path}").format(path=path_output))

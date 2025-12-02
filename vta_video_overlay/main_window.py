@@ -37,6 +37,7 @@ from vta_video_overlay.crop_selection_widgets import RectangleGeometry
 from vta_video_overlay.data_collections import ProcessProgress, ProcessResult
 from vta_video_overlay.data_file import Data
 from vta_video_overlay.file_widget_base import FileDataWidgetBase
+from vta_video_overlay.temp_dir_manager import TempDirManager
 from vta_video_overlay.ui.MainWindow import Ui_MainWindow
 
 
@@ -164,6 +165,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     f"Video processing failed.\nException occurred.\n\n{tpl.traceback_msg}"
                 ),
             )
+        # Cleanup temporary directory after processing is complete
+        TempDirManager.cleanup()
         self.set_stuff_enabled(True)
         self.progressbar.setValue(0)
 
