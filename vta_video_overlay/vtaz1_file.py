@@ -129,8 +129,11 @@ class VTAZ1File(BaseModel):
             with zipf.open("calibration.json", "r") as byte_f:
                 text_f = TextIOWrapper(buffer=byte_f, encoding="utf-8")
                 calibration_data = json.load(text_f)
-                # Извлекаем калибровочные коэффициенты
+                
+                # Получаем коэффициенты и тип калибровки
                 calibration_coeffs = calibration_data.get("coefficients")
+                calibration_type = calibration_data.get("calibration_type", "linear")
+
                 if calibration_coeffs is None:
                     raise ValueError(
                         "Calibration coefficients cannot be None. Please provide valid calibration coefficients."
@@ -147,33 +150,37 @@ class VTAZ1File(BaseModel):
                 text_f = TextIOWrapper(buffer=byte_f, encoding="utf-8")
                 cjc_data = json.load(text_f)
 
-            # Термопара - коэффициенты для преобразования ЭДС в температуру
-            thermocouple_poly = np.poly1d(
-                thermocouple_coeffs[::-1]
-            )  # Обратный порядок для numpy потому что в файле натуральный порядок
+            # --- РАСЧЕТ ТЕМПЕРАТУРЫ ---
 
-            # Параметры компенсации холодного спая
+            # 1. Компенсация холодного спая
             e_cold = cjc_data.get("e_cold", 0.0)
 
             # print(f"{e_cold=}")
-
-            # Калибровочные коэффициенты компенсации ошибки температуры
-            calibration_poly = np.poly1d(calibration_coeffs[::-1])
-
-            # print(f"{calibration_poly=}")
-
-            # Компенсация холодного спая
             compensated_emf = emf + e_cold
 
             # print(f"{compensated_emf=}")
 
-            # Преобразование ЭДС в температуру через термопару
-            temperature = thermocouple_poly(compensated_emf)
+            # 2. Преобразование ЭДС в температуру
+            # Коэффициенты термопары в JSON: [c0, c1, ..., c8] (от младшей степени к старшей)
+            # np.polyval требует [c8, ..., c0] (от старшей к младшей), поэтому разворачиваем [::-1]
+            temperature = np.polyval(thermocouple_coeffs[::-1], compensated_emf)
 
             # print(f"{temperature=}")
 
-            # Применение калибровки
-            temperature += calibration_poly(temperature)
+            # 3. Применение калибровки
+            calc_coeffs = list(calibration_coeffs)
+            while len(calc_coeffs) < 3:
+                calc_coeffs.append(0.0)
+            
+            if calibration_type == "linear":
+                # Берем [a, b] для ax + b
+                cal_poly_coeffs = calc_coeffs[:2]
+            else: # quadratic
+                # Берем [a, b, c] для ax^2 + bx + c
+                cal_poly_coeffs = calc_coeffs[:3]
+
+            calibration_correction = np.polyval(cal_poly_coeffs, temperature)
+            temperature = temperature + calibration_correction
 
             # print(f"{temperature=}")
 
