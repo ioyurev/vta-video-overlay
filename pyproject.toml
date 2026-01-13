@@ -1,6 +1,6 @@
 [project]
 name = "vta-video-overlay"
-version = "0.6.0"
+version = "1.0.0"
 description = ""
 authors = [{ name = "Ilya O. Yurev", email = "i.o.yurev@yandex.ru" }]
 requires-python = ">=3.11,<3.13"
@@ -48,7 +48,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.commitizen]
-version = "0.6.0"
+version = "1.0.0"
 version_files = [
     "vta_video_overlay/__version__.py",
     "pyproject.toml:version"
