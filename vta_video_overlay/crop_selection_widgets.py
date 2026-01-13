@@ -27,7 +27,7 @@ class RectangleGeometry(NamedTuple):
     w: int
     h: int
 
-    def safe_bound(self, max_width: int, max_height: int):
+    def safe_bound(self, max_width: int, max_height: int) -> "RectangleGeometry":
         # Ensure minimum dimensions to prevent invalid crop regions
         min_dimension = 10  # Minimum 10 pixels for width and height
 
@@ -66,9 +66,9 @@ class Rectangle(QtWidgets.QGraphicsRectItem, QtCore.QObject):
         w, h = p2.x() - x, p2.y() - y
         return RectangleGeometry(int(x), int(y), int(w), int(h))
 
-    def setRect(
+    def update_rect(
         self, x: float, y: float, w: float, h: float, move_points: bool = False
-    ):
+    ) -> None:
         super().setRect(x, y, w, h)
         if move_points:
             self.p1.setPos(x, y)
@@ -98,7 +98,7 @@ class GraphicsView(QtWidgets.QGraphicsView):
         self.scene().addItem(self.rectangle)
         self.scene().addItem(self.rectangle.p1)
         self.scene().addItem(self.rectangle.p2)
-        self.current_item = None
+        self.current_item: QtWidgets.QGraphicsItem | None = None
 
     def mousePressEvent(self, event: QtGui.QMouseEvent):
         item = self.itemAt(event.position().toPoint())

@@ -1,49 +1,32 @@
-"""
-PIL-based image composition and text rendering system
-
-Key Responsibilities:
-- High-quality text rendering with typographic controls
-- Multi-layer image composition with alpha blending
-- Coordinate system management for precise element placement
-- Font configuration and fallback handling
-- Cross-format compatibility with OpenCV frames
-
-Implementation Details:
-- Uses PIL's advanced anti-aliasing for text rendering
-- Automatic padding calculation based on font metrics
-- Anchor point system for alignment positioning
-- Color format conversion (BGR ↔ RGB) for OpenCV compatibility
-- Cached font objects for performance
-
-Text Rendering Features:
-- Unicode!
-- Background padding with configurable margins
-- Multi-size text support (small/large variants)
-- Vertical text stacking with automatic spacing
-- Color inversion protection (light/dark themes)
-"""
+from typing import Union
 
 from loguru import logger as log
 from PIL import Image, ImageDraw, ImageFont
 
-from vta_video_overlay.config import BG_COLOR, TEXT_COLOR, config
+from vta_video_overlay.config import BG_COLOR, TEXT_COLOR, BG_ALPHA, FONT_FILENAME, config
 from vta_video_overlay.enums import Alignment
 
+FontType = Union[ImageFont.FreeTypeFont, ImageFont.ImageFont]
+
+PILFONT: FontType
+PILFONTSMALL: FontType
+
 try:
-    PILFONT = ImageFont.truetype("times.ttf", config.main_text_size)
-    PILFONTSMALL = ImageFont.truetype("times.ttf", config.additional_text_size)
+    # Пытаемся загрузить DejaVuSans (или то, что в конфиге)
+    PILFONT = ImageFont.truetype(FONT_FILENAME, config.text.main_size)
+    PILFONTSMALL = ImageFont.truetype(FONT_FILENAME, config.text.additional_size)
 except Exception as e:
     try:
-        log.error(f"Failed to load font: {e}")
-        PILFONT = ImageFont.truetype("DejaVuSerif.ttf", config.main_text_size)
-        PILFONTSMALL = ImageFont.truetype(
-            "DejaVuSerif.ttf", config.additional_text_size
-        )
-    except Exception as e:
-        log.error(f"Failed to load font: {e}")
-        log.error("Fallback to default font")
-        PILFONT = ImageFont.load_default(size=config.main_text_size)
-        PILFONTSMALL = ImageFont.load_default(size=config.additional_text_size)
+        log.warning(f"Failed to load {FONT_FILENAME}: {e}. Trying system Arial...")
+        # Фоллбэк на Arial (есть почти везде)
+        PILFONT = ImageFont.truetype("arial.ttf", config.text.main_size)
+        PILFONTSMALL = ImageFont.truetype("arial.ttf", config.text.additional_size)
+    except Exception as e2:
+        log.error(f"Failed to load arial.ttf: {e2}")
+        log.error("Fallback to default PIL font (bitmap, ugly)")
+        # Самый крайний случай - встроенный растровый шрифт
+        PILFONT = ImageFont.load_default()
+        PILFONTSMALL = ImageFont.load_default()
 
 
 class PILFrame:
@@ -76,13 +59,25 @@ class PILFrame:
 
         bbox = draw.textbbox(xy=xy, text=text, anchor=anchor, font=font)
         bbox = (int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3]))
-        padding = 5
+        pad = config.text.bg_padding
         expanded_bbox = (
-            bbox[0] - padding,  # left
-            bbox[1] - padding,  # top
-            bbox[2] + padding,  # right
-            bbox[3] + padding,  # bottom
+            bbox[0] - pad,  # left
+            bbox[1] - pad,  # top
+            bbox[2] + pad,  # right
+            bbox[3] + pad,  # bottom
         )
-        draw.rectangle(xy=expanded_bbox, fill=bg_color)
+        
+        # Рисование полупрозрачного фона через alpha blending
+        if bg_color is not None:
+            # Создаем временный слой для фона
+            bg_layer = Image.new('RGBA', self.image.size, (0, 0, 0, 0))
+            bg_draw = ImageDraw.Draw(bg_layer)
+            # Рисуем прямоугольник с BG_COLOR и alpha=0.6 (153/255)
+            bg_draw.rectangle(expanded_bbox, fill=(*bg_color, int(255 * BG_ALPHA)))
+            # Смешиваем с основным изображением
+            self.image = Image.alpha_composite(self.image.convert('RGBA'), bg_layer)
+        
+        # Рисуем текст
+        draw = ImageDraw.Draw(self.image)
         draw.text(xy, text, fill=color[::-1], anchor=anchor, font=font)
         return expanded_bbox

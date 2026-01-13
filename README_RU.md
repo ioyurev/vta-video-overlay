@@ -27,15 +27,17 @@
 
 - Python 3.11+ (рекомендуется 3.12)
 - [FFmpeg & FFprobe](https://ffmpeg.org/download.html) в системном PATH
-- [Poetry](https://python-poetry.org/docs/) для управления зависимостями
+- [uv](https://docs.astral.sh/uv/) для управления зависимостями
 
 ## Установка
 
 ```bash
 git clone https://gitflic.ru/project/i-o-yurev/vta-video-overlay.git
 cd vta-video-overlay
-poetry install
+uv sync
 ```
+
+Создаётся виртуальное окружение в `.venv` со всеми установленными зависимостями.
 
 ## Сборка из исходников
 
@@ -62,7 +64,7 @@ bash uic.sh  # Linux
 
 ### Запуск приложения
 ```bash
-poetry run python -m vta_video_overlay
+uv run python -m vta_video_overlay
 ```
 
 ### Процесс работы

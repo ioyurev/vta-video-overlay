@@ -49,6 +49,11 @@ class App(QtWidgets.QApplication):
         self.exec()
 
 
-if __name__ == "__main__":
+def main():
+    """Main entry point for the application."""
     close_splash()
     App().run()
+
+
+if __name__ == "__main__":
+    main()

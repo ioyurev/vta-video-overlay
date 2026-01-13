@@ -51,8 +51,8 @@ class CropSelectionWindow(QtWidgets.QDialog, Ui_Dialog):
             return
         x, y = self.spinBox_x.value(), self.spinBox_y.value()
         w, h = self.spinBox_w.value(), self.spinBox_h.value()
-        if hasattr(self.graphicsView, "rectangle"):
-            self.graphicsView.rectangle.setRect(x, y, w, h, move_points=True)
+        if hasattr(self.graphicsView, "rectangle") and self.graphicsView.rectangle is not None:
+            self.graphicsView.rectangle.update_rect(x, y, w, h, move_points=True)
 
     @QtCore.Slot()
     def update_spinboxes(self):

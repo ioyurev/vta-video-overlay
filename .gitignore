@@ -2,7 +2,7 @@ example
 vta_video_overlay/ui/*.py
 assets/*.qm
 __pycache__
-pyinstaller
+pyinstaller/
 logs
 .venv
 dist

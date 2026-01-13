@@ -1,36 +1,3 @@
-"""
-Video processing pipeline and workflow management
-
-Key Responsibilities:
-- Coordinate multi-stage video processing workflow
-- Manage inter-process communication between components
-- Handle temporary file lifecycle and cleanup
-- Implement fault-tolerant processing with rollback capabilities
-
-Core Processing Stages:
-1. Pre-conversion:
-   - Validate input video timestamps
-   - Convert to intermediate format if needed
-2. OpenCV Processing:
-   - Apply graphical overlays and cropping
-   - Handle frame-by-frame composition
-3. Final Encoding:
-   - Convert to target format with proper codecs
-   - Apply final quality adjustments
-
-Processing Flow:
-1. Input validation and temporary directory creation
-2. Pre-conversion (if required) using FFmpeg
-3. OpenCV overlay processing with progress tracking
-4. Final encoding to target format
-5. Cleanup of temporary resources
-
-Implementation Details:
-- Uses ffmpeg-progress-yield for conversion tracking
-- Maintains frame counter synchronization
-- Implements Qt's thread-safe signal emission
-"""
-
 import traceback
 from pathlib import Path
 
@@ -50,10 +17,12 @@ class Pipeline(QtCore.QThread):
     stage_progress = QtCore.Signal(ProcessProgress)
     stage_finished = QtCore.Signal(tuple)
     work_finished = QtCore.Signal(ProcessResult)
+    fps_updated = QtCore.Signal(float)
     data: Data
     video_path_input: Path
     video_path_output: Path
     crop_rect: RectangleGeometry | None = None
+    graph_enabled: bool = True
 
     def run(self):
         try:
@@ -86,6 +55,8 @@ class Pipeline(QtCore.QThread):
                 path_output=file_to_overlay,
                 signal=self.stage_progress,
             )
+        
+        # VideoData теперь сама рассчитывает скорость при инициализации
         video_data = VideoData(video_path=file_to_overlay, data=self.data)
         self.stage_finished.emit((len(video_data.timestamps) - 1, "2/3", "frame"))
         return video_data
@@ -95,8 +66,10 @@ class Pipeline(QtCore.QThread):
             video_data=video_data,
             path_output=tmpfile,
             crop_rect=self.crop_rect,
+            graph_enabled=self.graph_enabled,
         )
         cv_agent.progress_signal.connect(self.stage_progress.emit)
+        cv_agent.fps_signal.connect(self.fps_updated.emit)
         cv_agent.run()
         self.stage_finished.emit((100.0, "3/3", "%"))
         return

@@ -1,38 +1,51 @@
-[tool.poetry]
+[project]
 name = "vta-video-overlay"
 version = "0.6.0"
 description = ""
-authors = ["Ilya O. Yurev <i.o.yurev@yandex.ru>"]
+authors = [{ name = "Ilya O. Yurev", email = "i.o.yurev@yandex.ru" }]
+requires-python = ">=3.11,<3.13"
 readme = "README.md"
-include = [
-    "vta_video_overlay/ui/MainWindow.py",
-    "vta_video_overlay/ui/resources_rc.py",
+dependencies = [
+    "pyside6>=6.6.2,<7",
+    "ffmpeg-progress-yield>=0.7.8,<0.8",
+    "pandas>=2.2.1,<3",
+    "opencv-python>=4.9.0.80,<5",
+    "openpyxl>=3.1.2,<4",
+    "loguru>=0.7.2,<0.8",
+    "ffmpeg-python>=0.2.0,<0.3",
+    "xlsxwriter>=3.2.0,<4",
+    "click>=8.1.7,<9",
+    "tqdm>=4.66.5,<5",
+    "pillow>=11.1.0,<12",
+    "pydantic>=2.11.4,<3",
+    "matplotlib>=3.10.8,<4",
+    "pandas-stubs>=2.3.3.251219",
 ]
 
-[tool.poetry.dependencies]
-python = ">=3.11,<3.13"
-pyside6 = "^6.6.2"
-ffmpeg-progress-yield = "^0.7.8"
-pandas = "^2.2.1"
-opencv-python = "^4.9.0.80"
-openpyxl = "^3.1.2"
-loguru = "^0.7.2"
-ffmpeg-python = "^0.2.0"
-xlsxwriter = "^3.2.0"
-click = "^8.1.7"
-tqdm = "^4.66.5"
-pillow = "^11.1.0"
-pydantic = "^2.11.4"
+[dependency-groups]
+dev = [
+    "pre-commit>=3.6.2,<4",
+    "ruff>=0.3.1,<0.4",
+    "commitizen>=3.18.0,<4",
+    "mypy>=1.9.0,<2",
+    "autoflake>=2.3.0,<3",
+    "pyinstaller>=6.5.0,<7",
+    "isort>=5.13.2,<6",
+]
 
+[project.scripts]
+vta_video_overlay = "vta_video_overlay.__main__:main"
 
-[tool.poetry.group.dev.dependencies]
-pre-commit = "^3.6.2"
-ruff = "^0.3.1"
-commitizen = "^3.18.0"
-mypy = "^1.9.0"
-autoflake = "^2.3.0"
-pyinstaller = "^6.5.0"
-isort = "^5.13.2"
+[tool.uv]
+package = true
+
+[tool.hatch.build.targets.sdist.force-include]
+"vta_video_overlay/ui/MainWindow.py" = "vta_video_overlay/ui/MainWindow.py"
+"vta_video_overlay/ui/resources_rc.py" = "vta_video_overlay/ui/resources_rc.py"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [tool.commitizen]
 version = "0.6.0"
@@ -43,7 +56,3 @@ version_files = [
 
 [tool.isort]
 profile = "black"
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"

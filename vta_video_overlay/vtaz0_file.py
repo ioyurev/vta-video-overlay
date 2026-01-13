@@ -6,7 +6,7 @@ from typing import TextIO, Tuple
 from zipfile import ZIP_DEFLATED, ZipFile
 
 import numpy as np
-from data_file import Data
+from vta_video_overlay.data_file import Data
 from pydantic import BaseModel, ConfigDict
 from PySide6 import QtWidgets
 

@@ -26,15 +26,17 @@ Desktop application for overlaying VPTAnalyzer (VTA) sensor data onto video reco
 
 - Python 3.11+ (recommended 3.12)
 - [FFmpeg & FFprobe](https://ffmpeg.org/download.html) in system PATH
-- [Poetry](https://python-poetry.org/docs/) for dependency management
+- [uv](https://docs.astral.sh/uv/) for dependency management
 
 ## Installation
 
 ```bash
 git clone https://gitflic.ru/project/i-o-yurev/vta-video-overlay.git
 cd vta-video-overlay
-poetry install
+uv sync
 ```
+
+This creates a virtual environment at `.venv` with all dependencies installed.
 
 ## Build from Source
 
@@ -61,7 +63,7 @@ bash uic.sh  # Linux
 
 ### Running the Application
 ```bash
-poetry run python -m vta_video_overlay
+uv run python -m vta_video_overlay
 ```
 
 ### Workflow

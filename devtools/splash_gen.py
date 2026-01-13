@@ -1,12 +1,14 @@
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageFile
 
 from vta_video_overlay.__version__ import __version__
 
 img = Image.new("RGB", (800, 400), (255, 255, 255))
-icon = Image.open("../assets/icon.png")
-icon = icon.resize((300, 300))
+icon_file: ImageFile.ImageFile = Image.open("../assets/icon.png")
+icon = icon_file.resize((300, 300))
 img.paste(icon, (50, 50))
 draw = ImageDraw.Draw(img)
+PILFONT: ImageFont.FreeTypeFont | ImageFont.ImageFont
+PILFONTSMALL: ImageFont.FreeTypeFont | ImageFont.ImageFont
 try:
     PILFONT = ImageFont.truetype("times.ttf", 60)
     PILFONTSMALL = ImageFont.truetype("times.ttf", 40)

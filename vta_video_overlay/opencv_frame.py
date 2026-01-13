@@ -1,38 +1,12 @@
-"""
-OpenCV frame processing and composition utilities
-
-Key Responsibilities:
-- Core image manipulation for video overlay rendering
-- Coordinate system management for text/graphic placement
-- Conversion between OpenCV, PIL and Qt image formats
-- Transparency-aware image compositing
-- Border management and aspect ratio preservation
-
-Implementation Details:
-- Uses OpenCV's BGR color space internally
-- Automatic alpha channel detection in overlays
-- Text bounding box calculations with safe margins
-- Numpy-based matrix operations for performance
-- Qt image integration via memory buffer sharing
-"""
-
 from typing import NamedTuple
 
 import cv2
 import numpy as np
 from PySide6 import QtGui
 
-from vta_video_overlay.config import BG_COLOR, TEXT_COLOR
 from vta_video_overlay.crop_selection_widgets import RectangleGeometry
 from vta_video_overlay.enums import Alignment
 from vta_video_overlay.pil_frame import Image, PILFrame
-
-
-class Font:
-    face = cv2.FONT_HERSHEY_COMPLEX
-    scale = 1.0
-    thickness = 2
-    linetype = cv2.LINE_AA
 
 
 class Size(NamedTuple):
@@ -82,65 +56,6 @@ class CVFrame:
         crop_w = max(10, min(rect.w, w - x))  # Minimum 10 pixels width
         crop_h = max(10, min(rect.h, h - y))  # Minimum 10 pixels height
         self.crop(x, y, crop_w, crop_h)
-
-    def make_border(
-        self, top=0, bottom=0, left=0, right=0, color: tuple[int, int, int] = (0, 0, 0)
-    ):
-        self.image = cv2.copyMakeBorder(
-            self.image,
-            top=top,
-            bottom=bottom,
-            left=left,
-            right=right,
-            borderType=cv2.BORDER_CONSTANT,
-            value=color,
-        )
-        self._update_size()
-
-    def put_text(
-        self,
-        text: str,
-        x: int,
-        y: int,
-        align: Alignment,
-        color: tuple[int, int, int] = TEXT_COLOR,
-        bg_color: tuple[int, int, int] = BG_COLOR,
-        margin=0,
-        scale=Font.scale,
-    ):
-        text_size = cv_get_text_size(text, scale=scale)
-        if align == Alignment.TOP_RIGHT:
-            text_x = x - text_size.width - margin
-            text_y = y + text_size.height + margin
-        elif align == Alignment.TOP_LEFT:
-            text_x = x = margin
-            text_y = y + text_size.height + margin
-        elif align == Alignment.BOTTOM_LEFT:
-            text_x = x + margin
-            text_y = y - text_size.height // 2 - margin
-        elif align == Alignment.BOTTOM_RIGHT:
-            text_x = x - text_size.width - margin
-            text_y = y - text_size.height // 2 - margin
-        elif align == Alignment.CENTER:
-            text_x = x - text_size.width // 2
-            text_y = y - text_size.height // 2
-        if bg_color is not None:
-            pt1 = (text_x - margin, text_y - text_size.height - margin)
-            pt2 = (
-                text_x + text_size.width + margin,
-                text_y + text_size.height // 2 + margin,
-            )
-            cv2.rectangle(self.image, pt1, pt2, bg_color, cv2.FILLED)
-        cv2.putText(
-            self.image,
-            text,
-            (text_x, text_y),
-            Font.face,
-            scale,
-            color,
-            Font.thickness,
-            cv2.LINE_AA,
-        )
 
     def put_img(
         self,
@@ -198,14 +113,3 @@ class CVFrame:
         self.image[y1:y2, x1:x2] = blended.astype(np.uint8)
 
         return self.image
-
-
-def cv_get_text_size(text: str, scale=Font.scale):
-    return Size(
-        *cv2.getTextSize(
-            text=text,
-            fontFace=Font.face,
-            fontScale=scale,
-            thickness=Font.thickness,
-        )[0]
-    )
