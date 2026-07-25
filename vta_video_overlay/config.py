@@ -76,6 +76,14 @@ class TextSettings(BaseModel):
     line_spacing: int = 10
     bg_padding: int = 5
 
+    # Флаги отображения отдельных элементов наложения
+    show_time: bool = True
+    show_emf: bool = True
+    show_temp: bool = True
+    show_speed: bool = True
+    show_operator: bool = True
+    show_sample: bool = True
+
 
 class Config(BaseModel):
     """Главный класс конфигурации приложения."""

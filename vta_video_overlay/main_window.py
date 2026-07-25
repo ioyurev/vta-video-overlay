@@ -15,6 +15,7 @@ from vta_video_overlay.data_collections import ProcessProgress, ProcessResult
 from vta_video_overlay.data_file import Data
 from vta_video_overlay.file_widget_base import FileDataWidgetBase
 from vta_video_overlay.graph_preview_dialog import GraphPreviewDialog
+from vta_video_overlay.overlay_settings_dialog import OverlaySettingsDialog
 from vta_video_overlay.preview_worker import PreviewWorker
 from vta_video_overlay.temp_dir_manager import TempDirManager
 from vta_video_overlay.ui.MainWindow import Ui_MainWindow
@@ -83,6 +84,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.actionPreviewGraph = QtGui.QAction(self.tr("Preview Graph Window"), self)
         self.actionPreviewGraph.triggered.connect(self.show_graph_preview)
         self.menuOptions.addAction(self.actionPreviewGraph)
+
+        # Экшен настройки элементов наложения
+        self.actionOverlaySettings = QtGui.QAction(self.tr("Overlay Settings..."), self)
+        self.actionOverlaySettings.triggered.connect(self.show_overlay_settings)
+        self.menuOptions.addAction(self.actionOverlaySettings)
 
         # --- НАСТРОЙКА UI ПРЕДПРОСМОТРА ---
         
@@ -386,6 +392,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         dlg = GraphPreviewDialog(data.time, data.speed, parent=self)
         dlg.exec()
+
+    @QtCore.Slot()
+    def show_overlay_settings(self):
+        dlg = OverlaySettingsDialog(parent=self)
+        if dlg.exec() == QtWidgets.QDialog.DialogCode.Accepted:
+            self.actionGraphEnabled.setChecked(config.graph.enabled)
+            if self.slider.isEnabled():
+                self.request_preview_update(self.slider.value())
 
     def closeEvent(self, event):
         if self.preview_thread:

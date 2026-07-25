@@ -60,54 +60,68 @@ def make_frame(
             align=Alignment.BOTTOM_RIGHT,
         )
     
-    # Отрисовка времени
-    bbox = cvframe.put_text(
-        text=QtCore.QCoreApplication.tr("t(s): {time:.1f}").format(time=time),  # type: ignore
-        xy=(config.text.margin_x, config.text.margin_y),
-        align=Alignment.TOP_LEFT,
-    )
-    
-    # Отрисовка EMF ниже времени
-    bbox = cvframe.put_text(
-        text=QtCore.QCoreApplication.tr("E(mV): {emf:.2f}").format(emf=emf),  # type: ignore
-        xy=(config.text.margin_x, config.text.line_spacing + bbox[3]),
-        align=Alignment.TOP_LEFT,
-    )
-    
-    # Отрисовка Температуры и Скорости
-    if temp is not None:
-        # Температура
-        bbox = cvframe.put_text(
-            text=f"T(°C): {temp:.0f}",
-            xy=(config.text.margin_x, config.text.line_spacing + bbox[3]),
+    # Отрисовка верхнего левого блока (время, EMF, температура, скорость)
+    last_top_bbox: tuple[int, int, int, int] | None = None
+
+    def get_top_y() -> int:
+        if last_top_bbox is None:
+            return config.text.margin_y
+        return last_top_bbox[3] + config.text.line_spacing
+
+    if config.text.show_time:
+        last_top_bbox = cvframe.put_text(
+            text=QtCore.QCoreApplication.tr("t(s): {time:.1f}").format(time=time),  # type: ignore
+            xy=(config.text.margin_x, get_top_y()),
             align=Alignment.TOP_LEFT,
         )
-        
-        # Скорость отображается ВСЕГДА (4-я строка)
-        if temp_speed is not None:
-            bbox = cvframe.put_text(
-                text=QtCore.QCoreApplication.tr("dT/dt(°C/s): {speed:.2f}").format(speed=temp_speed), # type: ignore
-                xy=(config.text.margin_x, config.text.line_spacing + bbox[3]),
-                align=Alignment.TOP_LEFT,
-            )
-    
-    if add_text is not None:
+
+    if config.text.show_emf:
+        last_top_bbox = cvframe.put_text(
+            text=QtCore.QCoreApplication.tr("E(mV): {emf:.2f}").format(emf=emf),  # type: ignore
+            xy=(config.text.margin_x, get_top_y()),
+            align=Alignment.TOP_LEFT,
+        )
+
+    if config.text.show_temp and temp is not None:
+        last_top_bbox = cvframe.put_text(
+            text=f"T(°C): {temp:.0f}",
+            xy=(config.text.margin_x, get_top_y()),
+            align=Alignment.TOP_LEFT,
+        )
+
+    if config.text.show_speed and temp_speed is not None:
+        last_top_bbox = cvframe.put_text(
+            text=QtCore.QCoreApplication.tr("dT/dt(°C/s): {speed:.2f}").format(speed=temp_speed),  # type: ignore
+            xy=(config.text.margin_x, get_top_y()),
+            align=Alignment.TOP_LEFT,
+        )
+
+    # Отрисовка нижнего левого блока (доп. текст, оператор, образец)
+    current_bottom_y = cvframe.size.height - config.text.margin_y
+
+    if add_text is not None and config.additional_text_enabled:
         bbox = cvframe.put_text(
             text=add_text,
-            xy=(config.text.margin_x, cvframe.size.height - config.text.margin_y),
+            xy=(config.text.margin_x, current_bottom_y),
             align=Alignment.BOTTOM_LEFT,
             small=True,
         )
-        xy = (config.text.margin_x, bbox[1] - config.text.line_spacing)
-    else:
-        xy = (config.text.margin_x, cvframe.size.height - config.text.margin_y)
-    
-    bbox = cvframe.put_text(
-        text=operator_name, xy=xy, align=Alignment.BOTTOM_LEFT, small=True
-    )
-    bbox = cvframe.put_text(
-        text=sample_name,
-        xy=(config.text.margin_x, bbox[1] - config.text.line_spacing),
-        align=Alignment.BOTTOM_LEFT,
-    )
+        current_bottom_y = bbox[1] - config.text.line_spacing
+
+    if config.text.show_operator and operator_name:
+        bbox = cvframe.put_text(
+            text=operator_name,
+            xy=(config.text.margin_x, current_bottom_y),
+            align=Alignment.BOTTOM_LEFT,
+            small=True,
+        )
+        current_bottom_y = bbox[1] - config.text.line_spacing
+
+    if config.text.show_sample and sample_name:
+        cvframe.put_text(
+            text=sample_name,
+            xy=(config.text.margin_x, current_bottom_y),
+            align=Alignment.BOTTOM_LEFT,
+        )
+
     return cvframe
