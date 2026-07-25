@@ -69,8 +69,9 @@ def make_frame(
         return last_top_bbox[3] + config.text.line_spacing
 
     if config.text.show_time:
+        _m, _s = divmod(time, 60)
         last_top_bbox = cvframe.put_text(
-            text=QtCore.QCoreApplication.tr("t(s): {time:.1f}").format(time=time),  # type: ignore
+            text=QtCore.QCoreApplication.tr("t: {m:02.0f}:{s:04.1f}").format(m=_m, s=_s),  # type: ignore
             xy=(config.text.margin_x, get_top_y()),
             align=Alignment.TOP_LEFT,
         )

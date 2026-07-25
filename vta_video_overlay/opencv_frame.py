@@ -62,11 +62,11 @@ class CVFrame:
         # Validate crop parameters to prevent invalid operations
         h, w = self.image.shape[:2]
         # Ensure crop coordinates are within image bounds
-        x = max(0, min(rect.x, w - 1))
-        y = max(0, min(rect.y, h - 1))
-        # Ensure crop dimensions are positive and don't exceed image bounds
-        crop_w = max(10, min(rect.w, w - x))  # Minimum 10 pixels width
-        crop_h = max(10, min(rect.h, h - y))  # Minimum 10 pixels height
+        x = (max(0, min(rect.x, w - 1))) & ~1
+        y = (max(0, min(rect.y, h - 1))) & ~1
+        # Ensure crop dimensions are EVEN numbers for YUV420P / HEVC / H.264 / AMF compatibility
+        crop_w = (max(10, min(rect.w, w - x))) & ~1
+        crop_h = (max(10, min(rect.h, h - y))) & ~1
         self.crop(x, y, crop_w, crop_h)
 
     def put_img(

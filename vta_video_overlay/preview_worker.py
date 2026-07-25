@@ -54,7 +54,7 @@ class PreviewWorker(QtCore.QObject):
             return
         
         frame = self.renderer.render_frame(frame_index)
-        if frame and frame_index == self.latest_requested_index:
+        if frame and frame_index == self.latest_requested_index and self.video_ctx is not None:
             time_sec = frame_index / self.video_ctx.fps
             self.frame_ready.emit(frame.to_pixmap(), time_sec)
 

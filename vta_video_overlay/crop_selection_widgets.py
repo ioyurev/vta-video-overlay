@@ -36,11 +36,11 @@ class RectangleGeometry(NamedTuple):
         w = max(min_dimension, min(max_width - x, self.w))
         h = max(min_dimension, min(max_height - y, self.h))
 
-        # Final validation to ensure we don't exceed boundaries
-        w = min(w, max_width - x)
-        h = min(h, max_height - y)
-        w = max(min_dimension, w)
-        h = max(min_dimension, h)
+        # Ensure EVEN width and height for YUV420P / HEVC / H.264 codec compatibility
+        w = (min(w, max_width - x)) & ~1
+        h = (min(h, max_height - y)) & ~1
+        w = max(min_dimension, w) & ~1
+        h = max(min_dimension, h) & ~1
 
         return RectangleGeometry(x, y, w, h)
 

@@ -37,7 +37,7 @@ from decimal import Decimal
 from pathlib import Path
 from typing import List
 
-import ffmpeg
+import ffmpeg  # type: ignore[import-untyped]
 from ffmpeg_progress_yield import FfmpegProgress
 from loguru import logger as log
 from PySide6 import QtCore
@@ -49,7 +49,13 @@ def get_pts(packets: list[dict]) -> List[int]:
     pts: List[int] = []
 
     for packet in packets:
-        pts.append(int(Decimal(packet["pts_time"]) * 1000))
+        time_str = packet.get("pts_time") or packet.get("dts_time")
+        if time_str is not None:
+            try:
+                pts.append(int(Decimal(time_str) * 1000))
+            except Exception as e:
+                log.debug(f"Skipping unparseable timestamp '{time_str}': {e}")
+                continue
 
     pts.sort()
     return pts
@@ -101,7 +107,7 @@ class FFmpeg(QtCore.QObject):
                 "-select_streams",
                 str(index),
                 "-show_entries",
-                "packet=pts_time",
+                "packet=pts_time,dts_time",
                 "-of",
                 "json",
                 str(video_path),

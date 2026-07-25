@@ -86,8 +86,8 @@ class GraphOverlay:
         
         # --- BLITTING SETUP ---
         self._background = None
-        self._last_xlim = None
-        self._last_ylim = None
+        self._last_xlim: tuple[float, float] | None = None
+        self._last_ylim: tuple[float, float] | None = None
 
     def _update_background(self):
         """Сохраняет статичный фон для blitting."""

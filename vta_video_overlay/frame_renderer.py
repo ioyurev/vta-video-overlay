@@ -48,18 +48,17 @@ class FrameRenderer:
                 time_window_sec=config.graph.time_window,
             )
     
-    def render_frame(self, frame_index: int) -> CVFrame | None:
-        """Рендерит один кадр."""
-        img = self.video_ctx.read_frame(frame_index)
+    def render_overlay(self, img: np.ndarray, frame_index: int) -> CVFrame | None:
+        """Отрисовывает оверлей на готовом кадре."""
         if img is None:
             return None
-        
+
         emf, temp, speed = self.aligned.at_index(frame_index)
-        
+
         graph_img = None
         if self.graph_renderer and config.graph.enabled:
             graph_img = self.graph_renderer.get_frame_overlay(frame_index)
-        
+
         return make_frame(
             img=img,
             crop_rect=self.crop_rect,
@@ -72,3 +71,10 @@ class FrameRenderer:
             sample_name=f"Sample: {self.data.sample}",
             add_text=config.additional_text if config.additional_text_enabled else None,
         )
+
+    def render_frame(self, frame_index: int) -> CVFrame | None:
+        """Рендерит один кадр."""
+        img = self.video_ctx.read_frame(frame_index)
+        if img is None:
+            return None
+        return self.render_overlay(img, frame_index)

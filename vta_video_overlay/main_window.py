@@ -1,5 +1,6 @@
 import platform
 import subprocess
+import time
 from pathlib import Path
 
 import cv2
@@ -13,6 +14,7 @@ from vta_video_overlay.controller import Controller
 from vta_video_overlay.crop_selection_widgets import RectangleGeometry
 from vta_video_overlay.data_collections import ProcessProgress, ProcessResult
 from vta_video_overlay.data_file import Data
+from vta_video_overlay.ffmpeg_utils import FFmpeg
 from vta_video_overlay.file_widget_base import FileDataWidgetBase
 from vta_video_overlay.graph_preview_dialog import GraphPreviewDialog
 from vta_video_overlay.overlay_settings_dialog import OverlaySettingsDialog
@@ -51,10 +53,17 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             QtWidgets.QLabel(self.tr("Version: {v}").format(v=__version__))
         )
         
-        # --- FPS LABEL ---
+        # --- FPS & ETA LABELS ---
         self.fps_label = QtWidgets.QLabel("FPS: --")
         self.fps_label.setFixedWidth(80)
         self.statusbar.addPermanentWidget(self.fps_label)
+
+        self.eta_label = QtWidgets.QLabel("Elapsed: 00:00 | ETA: --:--")
+        self.eta_label.setFixedWidth(220)
+        self.statusbar.addPermanentWidget(self.eta_label)
+
+        self.render_start_time: float | None = None
+        self.current_render_fps: float = 0.0
         
         self.about_window = AboutWindow(parent=self)
         self.actionAbout = QtGui.QAction(self.tr("About"), self)
@@ -237,16 +246,29 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def overlay(self):
         self.set_stuff_enabled(False)
         convert_excel = self.cb_excel.isChecked()
+        self.render_start_time = time.perf_counter()
+        self.current_render_fps = 0.0
+        self.eta_label.setText("Elapsed: 00:00 | ETA: --:--")
         self.controller.pipeline.stage_progress.connect(self.update_progressbar)
         self.controller.pipeline.stage_finished.connect(self.stage_finished)
         self.controller.pipeline.fps_updated.connect(self.update_fps)
-        self.controller.pipeline.work_finished.disconnect()
+        try:
+            self.controller.pipeline.work_finished.disconnect()
+        except (RuntimeError, TypeError) as e:
+            log.debug(f"Signal work_finished not connected before disconnect: {e}")
         self.controller.pipeline.work_finished.connect(self.finished)
         log.info(self.tr("Started video processing"))
         self.controller.overlay(convert_excel=convert_excel)
 
     @QtCore.Slot()
     def crop_done(self, rect: RectangleGeometry):
+        video_path = self.controller.pipeline.video_path_input
+        if video_path and Path(video_path).is_file():
+            try:
+                vw, vh = FFmpeg().get_resolution(Path(video_path))
+                rect = rect.safe_bound(vw, vh)
+            except Exception as e:
+                log.warning(f"Could not get resolution for crop bounding: {e}")
         log.info(self.tr("Crop done: {xywh}").format(xywh=rect))
         # Масштабируем ширину превью пропорционально новому кропу
         # h фиксированная, w меняется
@@ -330,12 +352,18 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     @QtCore.Slot(float)
     def update_fps(self, fps: float):
-        """Обновляет отображение FPS в статусбаре."""
+        """Обновляет отображение FPS и расчёт ETA в статусбаре."""
         self.fps_label.setText(f"FPS: {fps:.1f}")
+        self.current_render_fps = fps
+        self._update_eta_display()
 
     def finished(self, tpl: ProcessResult):
         self.raise_()
-        self.fps_label.setText("FPS: --")  # Сброс FPS
+        self.render_start_time = None
+        self.current_render_fps = 0.0
+        self.fps_label.setText("FPS: --")
+        self.eta_label.setText("Elapsed: 00:00 | ETA: --:--")
+        self.progressbar.setFormat("%p%")
         if tpl.is_success:
             QtWidgets.QMessageBox.information(
                 self, "VTA video overlay", self.tr("Video processing completed")
@@ -354,16 +382,39 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.progressbar.setValue(0)
 
     def update_progressbar(self, progress: ProcessProgress):
-        """Обновляет прогрессбар и превью во время рендера."""
+        """Обновляет прогрессбар, ETA и превью во время рендера."""
         self.progressbar.setValue(progress.value)
-        
+        self._update_eta_display()
+
         # Если кадр передан, показываем его в превью
         if progress.frame is not None:
             # Убедимся, что показываем слой с картинкой (а не лоадер)
             if self.preview_stack.currentIndex() != 0:
                 self.preview_stack.setCurrentIndex(0)
-                
+
             self.video_preview.setPixmap(progress.frame.to_pixmap())
+
+    def _update_eta_display(self):
+        if self.render_start_time is None:
+            return
+
+        elapsed_sec = time.perf_counter() - self.render_start_time
+        elapsed_str = f"{int(elapsed_sec // 60):02d}:{int(elapsed_sec % 60):02d}"
+
+        current_idx = self.progressbar.value()
+        max_idx = self.progressbar.maximum()
+        remaining_frames = max_idx - current_idx
+
+        if self.current_render_fps > 0 and remaining_frames > 0:
+            eta_sec = remaining_frames / self.current_render_fps
+            eta_str = f"{int(eta_sec // 60):02d}:{int(eta_sec % 60):02d}"
+        else:
+            eta_str = "--:--"
+
+        self.eta_label.setText(f"Elapsed: {elapsed_str} | ETA: {eta_str}")
+        if max_idx > 0:
+            pct = int((current_idx / max_idx) * 100)
+            self.progressbar.setFormat(f"{pct}% ({elapsed_str} / ETA {eta_str})")
 
     def stage_finished(self, tpl):
         total, stage_str, unit = tpl

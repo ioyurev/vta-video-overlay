@@ -7,9 +7,7 @@ from PySide6 import QtCore
 from vta_video_overlay.crop_selection_widgets import RectangleGeometry
 from vta_video_overlay.data_collections import ProcessProgress, ProcessResult
 from vta_video_overlay.data_file import Data
-from vta_video_overlay.ffmpeg_utils import FFmpeg
 from vta_video_overlay.opencv_processor import CVProcessor
-from vta_video_overlay.temp_dir_manager import TempDirManager
 from vta_video_overlay.video_data import VideoData
 
 
@@ -28,55 +26,26 @@ class Pipeline(QtCore.QThread):
         try:
             self.execute()
             self.work_finished.emit(ProcessResult(is_success=True))
-        except Exception:
+        except Exception as e:
+            trace_str = traceback.format_exc()
+            log.exception(f"Pipeline execution failed: {e}")
             self.work_finished.emit(
-                ProcessResult(is_success=False, traceback_msg=traceback.format_exc())
+                ProcessResult(is_success=False, traceback_msg=trace_str)
             )
 
     def execute(self):
-        self.tempdir = TempDirManager.get_temp_dir()
-        tmpfile1 = Path(self.tempdir / "out1.mp4")
-        tmpfile2 = Path(self.tempdir / "out2.mp4")
+        # 1. Загружаем видеоданные и привязываем временные метки
+        video_data = VideoData(video_path=self.video_path_input, data=self.data)
+        self.stage_finished.emit((len(video_data.timestamps) - 1, "1/1", "frame"))
 
-        video_data = self._preconvert(tmpfile=tmpfile1)
-        self._cv_overlay(video_data=video_data, tmpfile=tmpfile2)
-        self._final_convert(tmpfile=tmpfile2)
-
-    def _preconvert(self, tmpfile: Path):
-        if FFmpeg().check_for_packets(video_path=self.video_path_input):
-            file_to_overlay = self.video_path_input
-            self.stage_progress.emit(ProcessProgress(value=100, frame=None))
-            log.debug(self.tr("Skipped pre-conversion (timestamps exist)"))
-        else:
-            file_to_overlay = tmpfile
-            log.warning("Input video has no timestamps. Preconverting video...")
-            FFmpeg().convert_video(
-                path_input=self.video_path_input,
-                path_output=file_to_overlay,
-                signal=self.stage_progress,
-            )
-        
-        # VideoData теперь сама рассчитывает скорость при инициализации
-        video_data = VideoData(video_path=file_to_overlay, data=self.data)
-        self.stage_finished.emit((len(video_data.timestamps) - 1, "2/3", "frame"))
-        return video_data
-
-    def _cv_overlay(self, video_data: VideoData, tmpfile: Path):
+        # 2. Прямой 1-стадийный рендеринг OpenCV -> FFmpeg (0 временных файлов)
         cv_agent = CVProcessor(
             video_data=video_data,
-            path_output=tmpfile,
+            path_output=self.video_path_output,
             crop_rect=self.crop_rect,
             graph_enabled=self.graph_enabled,
         )
         cv_agent.progress_signal.connect(self.stage_progress.emit)
         cv_agent.fps_signal.connect(self.fps_updated.emit)
         cv_agent.run()
-        self.stage_finished.emit((100.0, "3/3", "%"))
-        return
-
-    def _final_convert(self, tmpfile: Path):
-        FFmpeg().convert_video(
-            path_input=tmpfile,
-            path_output=self.video_path_output,
-            signal=self.stage_progress,
-        )
+        self.stage_finished.emit((100.0, "1/1", "%"))

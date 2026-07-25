@@ -26,10 +26,9 @@ class Data(QtCore.QObject):
         if self.temp is None:
             return None
         
-        # Используем общую логику расчета скорости
         speed = calculate_speed(self.time, self.temp)
-        
-        log.info(f"Raw data speed calculated: {len(speed)} points")
+        if speed is not None:
+            log.info(f"Raw data speed calculated: {len(speed)} points")
         return speed
 
     def to_excel(self, path: Path):
@@ -46,14 +45,16 @@ class Data(QtCore.QObject):
         worksheet = writer.sheets[sheet_name]
         chart = workbook.add_chart({"type": "scatter", "subtype": "straight"})  # type: ignore
         if self.temp is not None:
-            column = "C"
             yaxis = Headers.TEMP
+            col_idx = 2
         else:
-            column = "B"
             yaxis = Headers.EMF
+            col_idx = 1
+
+        max_row = len(df)
         series_data = {
-            "categories": f"={sheet_name}!$A:$A",
-            "values": f"={sheet_name}!${column}:${column}",
+            "categories": [sheet_name, 1, 0, max_row, 0],
+            "values": [sheet_name, 1, col_idx, max_row, col_idx],
         }
         chart.add_series(series_data)
         chart.set_legend({"position": "none"})

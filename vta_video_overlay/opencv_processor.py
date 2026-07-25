@@ -1,18 +1,19 @@
-from pathlib import Path
-from typing import Final
+import subprocess
 import time
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 
-import cv2
+import numpy as np
 from loguru import logger as log
 from PySide6 import QtCore
 
+from vta_video_overlay.config import config
 from vta_video_overlay.crop_selection_widgets import RectangleGeometry
 from vta_video_overlay.data_collections import ProcessProgress
-from vta_video_overlay.video_data import VideoData
-from vta_video_overlay.video_context import VideoContext
 from vta_video_overlay.frame_renderer import FrameRenderer
-
-CODEC: Final = "mp4v"
+from vta_video_overlay.opencv_frame import CVFrame
+from vta_video_overlay.video_context import VideoContext
+from vta_video_overlay.video_data import VideoData
 
 
 class CVProcessor(QtCore.QObject):
@@ -35,7 +36,7 @@ class CVProcessor(QtCore.QObject):
     def run(self):
         # Открываем видео
         video_ctx = VideoContext.open(self.video_data.path)
-        
+
         # Создаем рендерер
         renderer = FrameRenderer(
             video_ctx=video_ctx,
@@ -44,45 +45,133 @@ class CVProcessor(QtCore.QObject):
             crop_rect=self.crop_rect,
             graph_enabled=self.graph_enabled,
         )
-        
-        # Размер после кропа
+
+        # Размер после кропа (гарантируем ЧЕТНЫЕ ширину и высоту для YUV420P / HEVC / AMF)
         if self.crop_rect:
-            size = (self.crop_rect.w, self.crop_rect.h)
+            size = (self.crop_rect.w & ~1, self.crop_rect.h & ~1)
         else:
-            size = (video_ctx.width, video_ctx.height)
-        
-        # Создаем writer
-        writer = cv2.VideoWriter(
+            size = (video_ctx.width & ~1, video_ctx.height & ~1)
+
+        # Для VFR-видео (переменная экспозиция камеры) CAP_PROP_FPS возвращает
+        # номинальный FPS, а не реальный. Вычисляем средний FPS из timestamps.
+        ts = self.video_data.aligned.timestamps
+        if len(ts) > 1 and (ts[-1] - ts[0]) > 0:
+            real_fps = (len(ts) - 1) / (ts[-1] - ts[0])
+        else:
+            real_fps = video_ctx.fps
+
+        # Подготавливаем команду FFmpeg для прямого кодирования из stdin
+        cmd = [
+            "ffmpeg",
+            "-y",
+            "-threads",
+            "1",
+            "-f",
+            "rawvideo",
+            "-vcodec",
+            "rawvideo",
+            "-s",
+            f"{size[0]}x{size[1]}",
+            "-pix_fmt",
+            "bgr24",
+            "-r",
+            str(real_fps),
+            "-i",
+            "-",
+            "-c:v",
+            config.video_encoding.codec,
+        ]
+
+        codec = config.video_encoding.codec
+        crf = config.video_encoding.crf
+        preset = config.video_encoding.preset
+
+        if codec == "libx265":
+            if crf == 0:
+                cmd.extend(["-x265-params", "lossless=1"])
+            else:
+                cmd.extend(["-crf", str(crf), "-preset", preset])
+        elif codec == "libx264":
+            cmd.extend(["-crf", str(crf), "-preset", preset])
+        elif codec in ("h264_amf", "hevc_amf"):
+            cmd.extend([
+                "-usage",
+                "transcoding",
+                "-quality",
+                "speed",
+                "-rc",
+                "cqp",
+                "-qp",
+                str(crf),
+            ])
+        elif codec in ("h264_nvenc", "hevc_nvenc"):
+            cmd.extend([
+                "-rc",
+                "constqp",
+                "-qp",
+                str(crf),
+            ])
+        elif codec in ("h264_qsv", "hevc_qsv"):
+            cmd.extend(["-global_quality", str(crf)])
+        elif codec == "mpeg4":
+            cmd.extend(["-q:v", str(crf if crf > 0 else 1)])
+
+        cmd.extend([
+            "-pix_fmt",
+            config.video_encoding.pix_fmt,
             str(self.path_output),
-            cv2.VideoWriter_fourcc(*CODEC),
-            video_ctx.fps,
-            size,
+        ])
+
+        log.info(
+            f"Starting direct FFmpeg pipe encoding ({config.video_encoding.codec}, CRF={config.video_encoding.crf}, threads={config.video_encoding.render_threads})..."
         )
-        
-        # --- FPS TRACKING ---
-        frame_times: list[float] = []
-        fps_update_interval = 10
-        
-        # Рендерим кадры
-        for idx in range(video_ctx.total_frames):
-            frame_start = time.perf_counter()
-            
-            frame = renderer.render_frame(idx)
-            if frame:
-                writer.write(frame.image)
-                self.progress_signal.emit(ProcessProgress(value=idx, frame=frame))
-            
-            # Замер времени кадра
-            frame_time = time.perf_counter() - frame_start
-            frame_times.append(frame_time)
-            
-            # Обновляем FPS каждые N кадров
-            if len(frame_times) >= fps_update_interval:
-                avg_time = sum(frame_times) / len(frame_times)
-                current_fps = 1.0 / avg_time if avg_time > 0 else 0.0
-                self.fps_signal.emit(current_fps)
-                frame_times.clear()
-        
-        writer.release()
+        proc = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+
+        # --- STREAMING BATCH PARALLEL RENDERING ---
+        num_threads = max(1, config.video_encoding.render_threads)
+        batch_size = max(4, num_threads * 2)
+
+        def _overlay_worker(args: tuple[int, np.ndarray]) -> tuple[int, CVFrame | None]:
+            idx, raw_frame = args
+            return idx, renderer.render_overlay(raw_frame, idx)
+
+        # Ограничиваем по размеру данных: OpenCV (CAP_PROP_FRAME_COUNT) может
+        # вернуть на 1 кадр больше, чем FFmpeg timestamps в aligned_data.
+        max_frames = min(video_ctx.total_frames, len(renderer.aligned.timestamps))
+
+        with ThreadPoolExecutor(max_workers=num_threads) as pool:
+            for batch_start in range(0, max_frames, batch_size):
+                batch_end = min(batch_start + batch_size, max_frames)
+
+                t_batch_0 = time.perf_counter()
+                raw_items: list[tuple[int, np.ndarray]] = []
+                for i in range(batch_start, batch_end):
+                    raw = video_ctx.read_frame(i)
+                    if raw is not None:
+                        raw_items.append((i, raw))
+
+                if not raw_items:
+                    continue
+
+                results = list(pool.map(_overlay_worker, raw_items))
+                results.sort(key=lambda x: x[0])
+
+                t_batch_elapsed = time.perf_counter() - t_batch_0
+                if len(results) > 0 and t_batch_elapsed > 0:
+                    batch_fps = len(results) / t_batch_elapsed
+                    self.fps_signal.emit(batch_fps)
+
+                for idx, frame in results:
+                    if frame and proc.stdin:
+                        proc.stdin.write(frame.image.tobytes())
+                        self.progress_signal.emit(
+                            ProcessProgress(value=idx, frame=frame)
+                        )
+
+        if proc.stdin:
+            proc.stdin.close()
+        proc.wait()
+
         video_ctx.close()
-        log.info(self.tr("OpenCV has finished"))
+        log.info(self.tr("OpenCV & FFmpeg Pipe rendering finished successfully"))
+

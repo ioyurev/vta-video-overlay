@@ -1,4 +1,4 @@
-from PySide6 import QtWidgets
+from PySide6 import QtCore, QtWidgets
 
 from vta_video_overlay.config import config
 
@@ -68,6 +68,96 @@ class OverlaySettingsDialog(QtWidgets.QDialog):
 
         main_layout.addWidget(gb_media)
 
+        # Группа: Настройки кодирования видео
+        gb_encoder = QtWidgets.QGroupBox(self.tr("Video Encoding Settings"))
+        layout_encoder = QtWidgets.QVBoxLayout(gb_encoder)
+
+        # 1. Выбор кодека (Динамически по поддерживаемым видеокартой/процессором)
+        from vta_video_overlay.codec_checker import get_available_codecs
+
+        layout_codec = QtWidgets.QHBoxLayout()
+        layout_codec.addWidget(QtWidgets.QLabel(self.tr("Codec:")))
+        self.combo_codec = QtWidgets.QComboBox()
+        available_codecs = get_available_codecs()
+        for label, codec_id in available_codecs:
+            self.combo_codec.addItem(label, codec_id)
+
+        # Устанавливаем текущий кодек
+        idx = self.combo_codec.findData(config.video_encoding.codec)
+        if idx >= 0:
+            self.combo_codec.setCurrentIndex(idx)
+        layout_codec.addWidget(self.combo_codec)
+        layout_encoder.addLayout(layout_codec)
+
+        # 2. Ползунок качества CRF (0 - Lossless, 15-17 - Visually Lossless, 23 - Recommended)
+        def format_crf_label(val: int) -> str:
+            if val == 0:
+                return f"CRF: {val} (Lossless / Без потерь)"
+            elif 1 <= val <= 17:
+                return f"CRF: {val} (Visually Lossless / Неотличимое)"
+            elif 18 <= val <= 23:
+                return f"CRF: {val} (High Quality / Рекомендуемый)"
+            else:
+                return f"CRF: {val} (Maximum Compression)"
+
+        self.lbl_crf = QtWidgets.QLabel(format_crf_label(config.video_encoding.crf))
+        layout_encoder.addWidget(self.lbl_crf)
+
+        self.slider_crf = QtWidgets.QSlider(QtCore.Qt.Orientation.Horizontal)
+        self.slider_crf.setRange(0, 28)
+        self.slider_crf.setValue(config.video_encoding.crf)
+        self.slider_crf.valueChanged.connect(
+            lambda val: self.lbl_crf.setText(format_crf_label(val))
+        )
+        layout_encoder.addWidget(self.slider_crf)
+
+        # 3. Пресет скорости
+        layout_preset = QtWidgets.QHBoxLayout()
+        layout_preset.addWidget(QtWidgets.QLabel(self.tr("Preset:")))
+        self.combo_preset = QtWidgets.QComboBox()
+        self.combo_preset.addItem("Fast", "fast")
+        self.combo_preset.addItem("Medium", "medium")
+        self.combo_preset.addItem("Slow", "slow")
+
+        idx_preset = self.combo_preset.findData(config.video_encoding.preset)
+        if idx_preset >= 0:
+            self.combo_preset.setCurrentIndex(idx_preset)
+        layout_preset.addWidget(self.combo_preset)
+        layout_encoder.addLayout(layout_preset)
+
+        # 4. Настройка числа потоков CPU
+        import os
+        logical_count = os.cpu_count() or 4
+
+        layout_threads = QtWidgets.QVBoxLayout()
+        self.cb_all_threads = QtWidgets.QCheckBox(
+            self.tr(f"Использовать все логические ядра ({logical_count})")
+        )
+
+        sub_layout_spin = QtWidgets.QHBoxLayout()
+        sub_layout_spin.addWidget(QtWidgets.QLabel(self.tr("Указать число потоков:")))
+        self.spin_threads = QtWidgets.QSpinBox()
+        self.spin_threads.setRange(1, 64)
+        self.spin_threads.setValue(config.video_encoding.render_threads)
+        sub_layout_spin.addWidget(self.spin_threads)
+
+        is_all = config.video_encoding.render_threads >= logical_count
+        self.cb_all_threads.setChecked(is_all)
+        self.spin_threads.setEnabled(not is_all)
+
+        def on_cb_all_toggled(checked: bool):
+            self.spin_threads.setEnabled(not checked)
+            if checked:
+                self.spin_threads.setValue(logical_count)
+
+        self.cb_all_threads.toggled.connect(on_cb_all_toggled)
+
+        layout_threads.addWidget(self.cb_all_threads)
+        layout_threads.addLayout(sub_layout_spin)
+        layout_encoder.addLayout(layout_threads)
+
+        main_layout.addWidget(gb_encoder)
+
         # Диалоговые кнопки (OK / Cancel)
         buttons = QtWidgets.QDialogButtonBox(
             QtWidgets.QDialogButtonBox.StandardButton.Ok
@@ -91,6 +181,18 @@ class OverlaySettingsDialog(QtWidgets.QDialog):
 
         config.logo_enabled = self.cb_logo.isChecked()
         config.graph.enabled = self.cb_graph.isChecked()
+
+        # Видео кодек
+        config.video_encoding.codec = self.combo_codec.currentData()
+        config.video_encoding.crf = self.slider_crf.value()
+        config.video_encoding.preset = self.combo_preset.currentData()
+
+        import os
+        logical_count = os.cpu_count() or 4
+        if self.cb_all_threads.isChecked():
+            config.video_encoding.render_threads = logical_count
+        else:
+            config.video_encoding.render_threads = self.spin_threads.value()
 
         config.update()
         self.accept()

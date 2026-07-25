@@ -50,7 +50,8 @@ def get_default_language() -> str:
         if loc is not None:
             return loc.split("_")[0]
         return "en"
-    except Exception:
+    except Exception as e:
+        log.debug(f"Default system language check failed, fallback to 'en': {e}")
         return "en"
 
 
@@ -85,18 +86,36 @@ class TextSettings(BaseModel):
     show_sample: bool = True
 
 
+def get_default_threads() -> int:
+    import os
+    return max(2, os.cpu_count() or 4)
+
+
+class VideoEncodingSettings(BaseModel):
+    """Настройки кодирования экспортируемого видео."""
+
+    codec: str = "libx264"
+    crf: int = 23
+    preset: str = "medium"
+    pix_fmt: str = "yuv420p"
+    render_threads: int = Field(default_factory=get_default_threads)
+
+
 class Config(BaseModel):
     """Главный класс конфигурации приложения."""
-    
+
     # Основные настройки
     logo_enabled: bool = True
     additional_text_enabled: bool = False
     additional_text: str = " "
     language: str = Field(default_factory=get_default_language)
-    
+
     # Группы настроек
     graph: GraphSettings = Field(default_factory=GraphSettings)
     text: TextSettings = Field(default_factory=TextSettings)
+    video_encoding: VideoEncodingSettings = Field(
+        default_factory=VideoEncodingSettings
+    )
 
     # Приватный атрибут для логотипа
     _logo_img: Any = PrivateAttr(default=None)
