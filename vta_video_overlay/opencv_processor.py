@@ -32,6 +32,11 @@ class CVProcessor(QtCore.QObject):
         self.path_output = path_output
         self.crop_rect = crop_rect
         self.graph_enabled = graph_enabled
+        self.is_interrupted = False
+
+    def stop(self):
+        """Флаг принудительной отмены обработки."""
+        self.is_interrupted = True
 
     def run(self):
         # Открываем видео
@@ -135,12 +140,17 @@ class CVProcessor(QtCore.QObject):
             idx, raw_frame = args
             return idx, renderer.render_overlay(raw_frame, idx)
 
-        # Ограничиваем по размеру данных: OpenCV (CAP_PROP_FRAME_COUNT) может
-        # вернуть на 1 кадр больше, чем FFmpeg timestamps в aligned_data.
-        max_frames = min(video_ctx.total_frames, len(renderer.aligned.timestamps))
+        # Инициализируем общее количество кадров по точным временным меткам FFmpeg,
+        # так как OpenCV (CAP_PROP_FRAME_COUNT) занижает число кадров для ASF/WMV файлов.
+        max_frames = len(renderer.aligned.timestamps)
 
         with ThreadPoolExecutor(max_workers=num_threads) as pool:
             for batch_start in range(0, max_frames, batch_size):
+                curr_thread = QtCore.QThread.currentThread()
+                if self.is_interrupted or (curr_thread and curr_thread.isInterruptionRequested()):
+                    log.warning("Processing interrupted by user or window close.")
+                    break
+
                 batch_end = min(batch_start + batch_size, max_frames)
 
                 t_batch_0 = time.perf_counter()
@@ -163,15 +173,28 @@ class CVProcessor(QtCore.QObject):
 
                 for idx, frame in results:
                     if frame and proc.stdin:
-                        proc.stdin.write(frame.image.tobytes())
-                        self.progress_signal.emit(
-                            ProcessProgress(value=idx, frame=frame)
-                        )
+                        try:
+                            proc.stdin.write(frame.image.tobytes())
+                            self.progress_signal.emit(
+                                ProcessProgress(value=idx, frame=frame)
+                            )
+                        except Exception as e:
+                            log.debug(f"Error writing to FFmpeg stdin: {e}")
+                            break
 
         if proc.stdin:
-            proc.stdin.close()
+            try:
+                proc.stdin.close()
+            except Exception as e:
+                log.debug(f"Error closing FFmpeg stdin: {e}")
+
+        curr_thread = QtCore.QThread.currentThread()
+        if self.is_interrupted or (curr_thread and curr_thread.isInterruptionRequested()):
+            proc.terminate()
+
         proc.wait()
 
         video_ctx.close()
-        log.info(self.tr("OpenCV & FFmpeg Pipe rendering finished successfully"))
+        if not (self.is_interrupted or (curr_thread and curr_thread.isInterruptionRequested())):
+            log.info(self.tr("OpenCV & FFmpeg Pipe rendering finished successfully"))
 

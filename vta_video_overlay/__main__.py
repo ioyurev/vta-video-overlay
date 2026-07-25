@@ -38,21 +38,22 @@ class App(QtWidgets.QApplication):
             translator.load(":/assets/translation_ru.qm")
             self.installTranslator(translator)
 
-    def run(self):
+    def run(self) -> int:
         if not self.check_environment():
-            return
+            return 1
         set_excepthook()
         self.set_language()
         c = Controller()
         w = MainWindow(controller=c)
         w.show()
-        self.exec()
+        return self.exec()
 
 
 def main():
     """Main entry point for the application."""
     close_splash()
-    App().run()
+    app = App(sys.argv)
+    sys.exit(app.run())
 
 
 if __name__ == "__main__":

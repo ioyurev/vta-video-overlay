@@ -22,6 +22,14 @@ class Pipeline(QtCore.QThread):
     crop_rect: RectangleGeometry | None = None
     graph_enabled: bool = True
 
+    cv_agent: CVProcessor | None = None
+
+    def stop(self):
+        """Отмена работы потока pipeline."""
+        self.requestInterruption()
+        if self.cv_agent:
+            self.cv_agent.stop()
+
     def run(self):
         try:
             self.execute()
@@ -39,13 +47,13 @@ class Pipeline(QtCore.QThread):
         self.stage_finished.emit((len(video_data.timestamps) - 1, "1/1", "frame"))
 
         # 2. Прямой 1-стадийный рендеринг OpenCV -> FFmpeg (0 временных файлов)
-        cv_agent = CVProcessor(
+        self.cv_agent = CVProcessor(
             video_data=video_data,
             path_output=self.video_path_output,
             crop_rect=self.crop_rect,
             graph_enabled=self.graph_enabled,
         )
-        cv_agent.progress_signal.connect(self.stage_progress.emit)
-        cv_agent.fps_signal.connect(self.fps_updated.emit)
-        cv_agent.run()
+        self.cv_agent.progress_signal.connect(self.stage_progress.emit)
+        self.cv_agent.fps_signal.connect(self.fps_updated.emit)
+        self.cv_agent.run()
         self.stage_finished.emit((100.0, "1/1", "%"))

@@ -453,9 +453,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.request_preview_update(self.slider.value())
 
     def closeEvent(self, event):
+        pipeline = self.controller.pipeline
+        if pipeline and pipeline.isRunning():
+            log.info("Closing window: stopping pipeline...")
+            pipeline.stop()
+            pipeline.wait(3000)
+
         if self.preview_thread:
             if self.worker:
                 self.worker.cleanup()
             self.preview_thread.quit()
-            self.preview_thread.wait()
+            self.preview_thread.wait(1000)
         super().closeEvent(event)
+        QtWidgets.QApplication.quit()
