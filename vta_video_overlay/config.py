@@ -256,15 +256,16 @@ def style_graph_axes(ax: Axes, label_fontsize: float) -> None:
         spine.set_linewidth(1)
 
 
-def setup_mpl_style() -> tuple[float, float]:
+def setup_mpl_style(text_size: int | None = None) -> tuple[float, float]:
     """Настраивает Matplotlib (полная настройка) и возвращает (title_pt, label_pt)."""
     dpi = 100
-    title_pt = config.text.additional_size * 72 / dpi
+    size = text_size if text_size is not None else config.text.additional_size
+    title_pt = size * 72 / dpi
     label_pt = title_pt * 0.6
-    
+
     setup_mpl_fonts()
     mpl.rcParams['font.size'] = label_pt
-    
+
     return title_pt, label_pt
 
 

@@ -11,6 +11,7 @@ from pydantic import BaseModel, ConfigDict
 from PySide6 import QtWidgets
 
 from vta_video_overlay.file_widget_base import FileDataWidgetBase
+from vta_video_overlay.info_models import MeasurementInfo
 
 
 class VTAZFileWidget(FileDataWidgetBase):
@@ -123,6 +124,43 @@ class VTAZ0File(BaseModel):
         data.temp = self.temp
 
         return data
+
+    def to_info(self) -> MeasurementInfo:
+        t_min = float(self.time[0]) if len(self.time) else 0.0
+        t_max = float(self.time[-1]) if len(self.time) else 0.0
+        emf_min = float(self.emf.min()) if len(self.emf) else None
+        emf_max = float(self.emf.max()) if len(self.emf) else None
+        temp_min = (
+            float(self.temp.min())
+            if self.temp is not None and len(self.temp)
+            else None
+        )
+        temp_max = (
+            float(self.temp.max())
+            if self.temp is not None and len(self.temp)
+            else None
+        )
+
+        return MeasurementInfo(
+            source_format="VTAZ",
+            version=self.metadata.vtaz_version,
+            path=self.path,
+            sample=self.metadata.sample,
+            operator=self.metadata.operator,
+            points=len(self.time),
+            t_min_sec=t_min,
+            t_max_sec=t_max,
+            duration_sec=t_max - t_min,
+            emf_min=emf_min,
+            emf_max=emf_max,
+            temp_available=self.temp is not None,
+            temp_min=temp_min,
+            temp_max=temp_max,
+            calibration_available=self.has_cal,
+            calibration_type="polynomial" if self.has_cal else None,
+            calibration_semantics="EMF → T",
+            calibration_coeffs_text=str(self.coeff) if self.coeff else None,
+        )
 
     def create_widget(self):
         """Create widget for displaying VTAZ file information"""

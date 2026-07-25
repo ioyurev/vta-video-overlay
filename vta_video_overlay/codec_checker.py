@@ -51,6 +51,7 @@ def is_codec_working(codec_name: str) -> bool:
         return False
 
 
+@lru_cache(maxsize=1)
 def get_available_codecs() -> list[tuple[str, str]]:
     """Возвращает список поддерживаемых на данном ПК кодеков в формате [(название_в_ui, имя_кодека)]."""
     all_codecs = [

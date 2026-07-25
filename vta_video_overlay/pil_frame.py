@@ -8,25 +8,24 @@ from vta_video_overlay.enums import Alignment
 
 FontType = Union[ImageFont.FreeTypeFont, ImageFont.ImageFont]
 
-PILFONT: FontType
-PILFONTSMALL: FontType
+_font_cache: dict[tuple[str, int], FontType] = {}
 
-try:
-    # Пытаемся загрузить DejaVuSans (или то, что в конфиге)
-    PILFONT = ImageFont.truetype(FONT_FILENAME, config.text.main_size)
-    PILFONTSMALL = ImageFont.truetype(FONT_FILENAME, config.text.additional_size)
-except Exception as e:
-    try:
-        log.warning(f"Failed to load {FONT_FILENAME}: {e}. Trying system Arial...")
-        # Фоллбэк на Arial (есть почти везде)
-        PILFONT = ImageFont.truetype("arial.ttf", config.text.main_size)
-        PILFONTSMALL = ImageFont.truetype("arial.ttf", config.text.additional_size)
-    except Exception as e2:
-        log.error(f"Failed to load arial.ttf: {e2}")
-        log.error("Fallback to default PIL font (bitmap, ugly)")
-        # Самый крайний случай - встроенный растровый шрифт
-        PILFONT = ImageFont.load_default()
-        PILFONTSMALL = ImageFont.load_default()
+
+def get_font(small: bool = False) -> FontType:
+    size = config.text.additional_size if small else config.text.main_size
+    key = (FONT_FILENAME, size)
+    if key not in _font_cache:
+        try:
+            _font_cache[key] = ImageFont.truetype(FONT_FILENAME, size)
+        except Exception as e:
+            try:
+                log.warning(f"Failed to load {FONT_FILENAME}: {e}. Trying system Arial...")
+                _font_cache[key] = ImageFont.truetype("arial.ttf", size)
+            except Exception as e2:
+                log.error(f"Failed to load arial.ttf: {e2}")
+                log.error("Fallback to default PIL font")
+                _font_cache[key] = ImageFont.load_default()
+    return _font_cache[key]
 
 
 class PILFrame:
@@ -43,10 +42,7 @@ class PILFrame:
         padding: int = 5,
         small: bool = False,
     ):
-        if small:
-            font = PILFONTSMALL
-        else:
-            font = PILFONT
+        font = get_font(small=small)
         draw = ImageDraw.Draw(self.image)
         if align == Alignment.BOTTOM_LEFT:
             anchor = "lb"

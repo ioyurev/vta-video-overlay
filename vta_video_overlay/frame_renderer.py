@@ -46,6 +46,7 @@ class FrameRenderer:
                 width=g_w,
                 height=g_h,
                 time_window_sec=config.graph.time_window,
+                timestamps=self.aligned.timestamps,
             )
     
     def render_overlay(self, img: np.ndarray, frame_index: int) -> CVFrame | None:

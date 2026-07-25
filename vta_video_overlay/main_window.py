@@ -1,6 +1,7 @@
 import platform
 import subprocess
 import time
+from dataclasses import replace
 from pathlib import Path
 
 import cv2
@@ -13,12 +14,19 @@ from vta_video_overlay.config import appdata_path, config
 from vta_video_overlay.controller import Controller
 from vta_video_overlay.crop_selection_widgets import RectangleGeometry
 from vta_video_overlay.data_collections import ProcessProgress, ProcessResult
-from vta_video_overlay.data_file import Data
 from vta_video_overlay.ffmpeg_utils import FFmpeg
-from vta_video_overlay.file_widget_base import FileDataWidgetBase
 from vta_video_overlay.graph_preview_dialog import GraphPreviewDialog
+from vta_video_overlay.info_builders import (
+    build_aligned_info,
+    build_timeline_selection,
+    build_video_info,
+    update_video_info_with_timeline,
+)
+from vta_video_overlay.info_models import AlignedInfo, LoadedMeasurement, VideoInfo
 from vta_video_overlay.overlay_settings_dialog import OverlaySettingsDialog
+from vta_video_overlay.aspect_ratio_label import AspectRatioLabel
 from vta_video_overlay.preview_worker import PreviewWorker
+from vta_video_overlay.session_info_widget import SessionInfoWidget
 from vta_video_overlay.temp_dir_manager import TempDirManager
 from vta_video_overlay.ui.MainWindow import Ui_MainWindow
 
@@ -34,9 +42,11 @@ def open_file_explorer(path: Path):
 
 
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
+    video_preview: AspectRatioLabel
+
     # Сигналы для общения с воркером
-    worker_data_signal = QtCore.Signal(object, object)  # data, crop_rect
-    worker_request_signal = QtCore.Signal(int, object, object)  # frame_index, data, crop_rect
+    worker_data_signal = QtCore.Signal(object, object, object)  # data, crop_rect, timeline
+    worker_request_signal = QtCore.Signal(int, object, object, object)  # frame_index, data, crop_rect, timeline
 
     def __init__(self, controller: Controller):
         super().__init__()
@@ -47,25 +57,36 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.controller.crop_done.connect(self.crop_done)
 
         self.btn_tda.clicked.connect(self.pick_file)
+        self.btn_tda.setToolTip(self.tr("Select measurement data file (.tda, .vtaz)"))
         self.btn_video.clicked.connect(self.pick_video)
+        self.btn_video.setToolTip(self.tr("Select input video file"))
         self.btn_convert.clicked.connect(self.overlay)
+        self.btn_convert.setEnabled(False)
+        self.btn_convert.setToolTip(self.tr("Start video export with data overlay"))
         self.statusbar.addWidget(
             QtWidgets.QLabel(self.tr("Version: {v}").format(v=__version__))
         )
-        
+
         # --- FPS & ETA LABELS ---
         self.fps_label = QtWidgets.QLabel("FPS: --")
         self.fps_label.setFixedWidth(80)
+        self.fps_label.hide()
         self.statusbar.addPermanentWidget(self.fps_label)
 
         self.eta_label = QtWidgets.QLabel("Elapsed: 00:00 | ETA: --:--")
         self.eta_label.setFixedWidth(220)
+        self.eta_label.hide()
         self.statusbar.addPermanentWidget(self.eta_label)
 
         self.render_start_time: float | None = None
         self.current_render_fps: float = 0.0
-        
+
         self.about_window = AboutWindow(parent=self)
+
+        # System tray для уведомлений
+        self.tray_icon = QtWidgets.QSystemTrayIcon(self)
+        self.tray_icon.setIcon(QtGui.QIcon(":/assets/icon.png"))
+
         self.actionAbout = QtGui.QAction(self.tr("About"), self)
         self.actionAbout.triggered.connect(self.show_about)
         self.menubar.addAction(self.actionAbout)
@@ -79,16 +100,21 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.crop_action.setEnabled(False)
         self.menubar.addAction(self.crop_action)
 
+        self.reset_crop_action = QtGui.QAction(self.tr("Reset Crop"), self)
+        self.reset_crop_action.triggered.connect(self.reset_crop)
+        self.reset_crop_action.setEnabled(False)
+        self.menubar.addAction(self.reset_crop_action)
+
         # Добавляем меню Options
         self.menuOptions = self.menubar.addMenu(self.tr("Options"))
-        
+
         # Чекбокс включения графика
         self.actionGraphEnabled = QtGui.QAction(self.tr("Show Speed Graph"), self)
         self.actionGraphEnabled.setCheckable(True)
         self.actionGraphEnabled.setChecked(config.graph.enabled)
         self.actionGraphEnabled.triggered.connect(self.toggle_graph_enabled)
         self.menuOptions.addAction(self.actionGraphEnabled)
-        
+
         # Экшен предпросмотра графика
         self.actionPreviewGraph = QtGui.QAction(self.tr("Preview Graph Window"), self)
         self.actionPreviewGraph.triggered.connect(self.show_graph_preview)
@@ -99,14 +125,18 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.actionOverlaySettings.triggered.connect(self.show_overlay_settings)
         self.menuOptions.addAction(self.actionOverlaySettings)
 
+        # --- СОСТОЯНИЕ СВЕДЕНИЙ СЕССИИ ---
+        self.loaded_measurement: LoadedMeasurement | None = None
+        self.video_info: VideoInfo | None = None
+        self.aligned_info: AlignedInfo | None = None
+
         # --- НАСТРОЙКА UI ПРЕДПРОСМОТРА ---
-        
+
         # 1. Слайдер
         self.slider = QtWidgets.QSlider(QtCore.Qt.Orientation.Horizontal)
         self.slider.setRange(0, 100)
         self.slider.setEnabled(False)
-        
-        # Подключаем вручную, избегая имен on_... для слотов, чтобы не путать connectSlotsByName
+
         self.slider.valueChanged.connect(self.handle_slider_moved)
         self.slider.sliderReleased.connect(self.handle_slider_released)
 
@@ -114,23 +144,17 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.lbl_time.setFixedWidth(50)
         self.lbl_time.setAlignment(QtCore.Qt.AlignmentFlag.AlignRight | QtCore.Qt.AlignmentFlag.AlignVCenter)
 
-        slider_layout = QtWidgets.QHBoxLayout()
-        slider_layout.addWidget(self.lbl_time)
-        slider_layout.addWidget(self.slider)
-
         # 2. Стек для переключения Картинка / Загрузка
         self.preview_stack = QtWidgets.QStackedWidget()
-        
-        # Стр 0: Видео (берем существующий виджет)
-        # Важно: video_preview уже создан в setupUi, но мы его переносим в stack
-        self.video_preview.setScaledContents(True)
+
+        self.video_preview = AspectRatioLabel()
+        self.video_preview.setStyleSheet("background-color: rgb(0, 0, 0);")
         self.preview_stack.addWidget(self.video_preview)
-        
-        # Стр 1: Загрузка
+
         loading_widget = QtWidgets.QWidget()
         loading_layout = QtWidgets.QVBoxLayout(loading_widget)
         loading_bar = QtWidgets.QProgressBar()
-        loading_bar.setRange(0, 0)  # Бесконечная анимация
+        loading_bar.setRange(0, 0)
         loading_bar.setTextVisible(False)
         loading_label = QtWidgets.QLabel(self.tr("Rendering preview..."))
         loading_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
@@ -140,26 +164,60 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         loading_layout.addStretch()
         self.preview_stack.addWidget(loading_widget)
 
-        # 3. Внедрение в лейаут
-        # Мы заменяем место, где лежал video_preview, на наш контейнер со стеком и слайдером
-        grid = self.centralwidget.layout()
-        if grid and isinstance(grid, QtWidgets.QGridLayout):
-            # Находим, где лежит video_preview
-            # Примечание: после addWidget в стек, виджет может пропасть из грида,
-            # но позицию мы должны знать заранее или использовать хардкод из .ui (row=0, col=3, rowSpan=7)
-            # В MainWindow.ui video_preview лежит в gridLayout по координатам 0, 3, 7, 1
-            
-            preview_container = QtWidgets.QWidget()
-            vbox = QtWidgets.QVBoxLayout(preview_container)
-            vbox.setContentsMargins(0, 0, 0, 0)
-            vbox.addWidget(self.preview_stack)
-            vbox.addLayout(slider_layout)
-            
-            # Удаляем старый плейсхолдер (хотя он уже перемещен в стек, но слот в лейауте может быть занят)
-            # Просто кладем поверх или заменяем
-            grid.addWidget(preview_container, 0, 3, 7, 1)
-        else:
-            log.error("Central widget layout is not QGridLayout or not found")
+        # Создаём новый центральный layout
+        central = QtWidgets.QWidget()
+        main_grid = QtWidgets.QGridLayout(central)
+        main_grid.setContentsMargins(4, 4, 4, 4)
+        main_grid.setSpacing(6)
+
+        # --- Левый верхний блок: управление ---
+        control_widget = QtWidgets.QWidget()
+        control_layout = QtWidgets.QVBoxLayout(control_widget)
+        control_layout.setContentsMargins(0, 0, 0, 0)
+
+        tda_row = QtWidgets.QHBoxLayout()
+        tda_row.addWidget(self.btn_tda)
+        tda_row.addWidget(self.edit_tda)
+        control_layout.addLayout(tda_row)
+
+        video_row = QtWidgets.QHBoxLayout()
+        video_row.addWidget(self.btn_video)
+        video_row.addWidget(self.edit_video)
+        control_layout.addLayout(video_row)
+
+        control_layout.addWidget(self.cb_excel)
+        control_layout.addWidget(self.btn_convert)
+        control_layout.addStretch()
+        control_layout.addWidget(self.progressbar)
+
+        main_grid.addWidget(control_widget, 0, 0)
+
+        # --- Правый верхний блок: preview ---
+        preview_container = QtWidgets.QWidget()
+        preview_layout = QtWidgets.QVBoxLayout(preview_container)
+        preview_layout.setContentsMargins(0, 0, 0, 0)
+        preview_layout.addWidget(self.preview_stack)
+
+        slider_layout = QtWidgets.QHBoxLayout()
+        slider_layout.addWidget(self.lbl_time)
+        slider_layout.addWidget(self.slider)
+        preview_layout.addLayout(slider_layout)
+
+        main_grid.addWidget(preview_container, 0, 1)
+
+        # --- Нижний блок: три информационных панели ---
+        self.session_info = SessionInfoWidget()
+        self.session_info.setMinimumHeight(200)
+        main_grid.addWidget(self.session_info, 1, 0, 1, 2)
+
+        main_grid.setRowStretch(0, 1)
+        main_grid.setRowStretch(1, 1)
+        main_grid.setColumnStretch(0, 1)
+        main_grid.setColumnStretch(1, 1)
+
+        # Заменяем дефолтный centralwidget из .ui динамической сеткой.
+        # Замечание: widget_container и line из .ui не используются напрямую в новом layout.
+        self.setCentralWidget(central)
 
         # Потоки
         self.preview_thread: QtCore.QThread | None = None
@@ -169,7 +227,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def start_preview_worker(self, video_path):
         """Запускает поток предпросмотра."""
-        # Очистка старого потока
         if self.preview_thread:
             self.preview_thread.quit()
             self.preview_thread.wait()
@@ -178,31 +235,24 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.worker = PreviewWorker(video_path)
         self.worker.moveToThread(self.preview_thread)
 
-        # Подключение сигналов (только воркер-специфичные)
         self.preview_thread.started.connect(self.worker.init_video)
         self.worker_data_signal.connect(self.worker.update_data)
         self.worker_request_signal.connect(self.worker.request_frame)
         self.worker.frame_ready.connect(self.handle_frame_ready)
-        
-        # Запуск
+
         self.preview_thread.start()
 
-        # Узнаем кол-во кадров синхронно (один раз для слайдера)
         cap = cv2.VideoCapture(video_path)
         if cap.isOpened():
             total_frames_val = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
             fps_val = cap.get(cv2.CAP_PROP_FPS)
             self.preview_total_frames = max(0, total_frames_val)
             self.current_fps = fps_val if fps_val > 0 else 30.0
-            self.slider.setRange(0, max(0, self.preview_total_frames - 1))
             self.slider.setValue(0)
-            self.slider.setEnabled(True)
             cap.release()
 
-        # Инициализация данных (если они уже были загружены)
+        self._refresh_slider_range()
         self.update_worker_data()
-        
-        # Запрос первого кадра
         self.request_preview_update(0)
 
     def update_worker_data(self):
@@ -210,31 +260,39 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         data = self.controller.pipeline.data
         if self.worker:
             crop_rect = self.controller.pipeline.crop_rect
-            self.worker_data_signal.emit(data, crop_rect)
+            timeline = self.controller.pipeline.timeline
+            self.worker_data_signal.emit(data, crop_rect, timeline)
 
     def request_preview_update(self, frame_index):
         """Запрашивает обновление кадра."""
         if not self.worker:
             return
-        
-        # Показываем лоадер
+
         self.preview_stack.setCurrentIndex(1)
-        
+
         data = self.controller.pipeline.data
         crop_rect = self.controller.pipeline.crop_rect
-        self.worker_request_signal.emit(frame_index, data, crop_rect)
+        timeline = self.controller.pipeline.timeline
+        self.worker_request_signal.emit(frame_index, data, crop_rect, timeline)
 
     @QtCore.Slot(object, float)
     def handle_frame_ready(self, pixmap, time_sec):
         """Пришел готовый кадр из потока."""
         self.video_preview.setPixmap(pixmap)
         self.lbl_time.setText(f"{time_sec:.1f}s")
-        self.preview_stack.setCurrentIndex(0)  # Показываем картинку
+        self.preview_stack.setCurrentIndex(0)
 
     @QtCore.Slot(int)
     def handle_slider_moved(self, val):
-        """Слайдер тянут: обновляем только текст времени (быстро)."""
-        if self.current_fps > 0:
+        """Показывает absolute source time для kept-позиции."""
+        timeline = self.controller.pipeline.timeline
+        if timeline is not None and timeline.status != "none":
+            if val < len(timeline.kept_timestamps_sec):
+                t = float(timeline.kept_timestamps_sec[val])
+                self.lbl_time.setText(f"{t:.1f}s")
+            else:
+                self.lbl_time.setText("—")
+        elif self.current_fps > 0:
             self.lbl_time.setText(f"{val / self.current_fps:.1f}s")
 
     @QtCore.Slot()
@@ -244,10 +302,21 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.request_preview_update(val)
 
     def overlay(self):
+        timeline = self.controller.pipeline.timeline
+        if timeline is None or timeline.status == "none":
+            QtWidgets.QMessageBox.warning(
+                self,
+                self.tr("Warning"),
+                self.tr("No temporal overlap between video and data. Export is not possible."),
+            )
+            return
+
         self.set_stuff_enabled(False)
         convert_excel = self.cb_excel.isChecked()
         self.render_start_time = time.perf_counter()
         self.current_render_fps = 0.0
+        self.fps_label.show()
+        self.eta_label.show()
         self.eta_label.setText("Elapsed: 00:00 | ETA: --:--")
         self.controller.pipeline.stage_progress.connect(self.update_progressbar)
         self.controller.pipeline.stage_finished.connect(self.stage_finished)
@@ -260,6 +329,79 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         log.info(self.tr("Started video processing"))
         self.controller.overlay(convert_excel=convert_excel)
 
+    def _refresh_slider_range(self):
+        """Обновляет диапазон слайдера на основе timeline selection."""
+        timeline = self.controller.pipeline.timeline
+        if timeline is not None and timeline.status != "none":
+            self.slider.setRange(0, max(0, timeline.kept_frames - 1))
+            self.slider.setEnabled(True)
+        elif self.preview_total_frames > 0:
+            self.slider.setRange(0, max(0, self.preview_total_frames - 1))
+            self.slider.setEnabled(True)
+        else:
+            self.slider.setRange(0, 0)
+            self.slider.setEnabled(False)
+
+    def _refresh_timeline_and_aligned(self) -> None:
+        """Пересчитывает timeline selection и aligned info."""
+        if self.loaded_measurement is None or self.video_info is None:
+            self.controller.pipeline.timeline = None
+            self.aligned_info = None
+            self.btn_convert.setEnabled(False)
+            return
+
+        timeline = build_timeline_selection(
+            data=self.loaded_measurement.data,
+            video_info=self.video_info,
+        )
+        self.controller.pipeline.timeline = timeline
+
+        self.video_info = update_video_info_with_timeline(self.video_info, timeline)
+
+        self.aligned_info = build_aligned_info(
+            data=self.loaded_measurement.data,
+            video_info=self.video_info,
+            timeline=timeline,
+        )
+
+        has_valid_overlap = timeline.status != "none"
+        self.btn_convert.setEnabled(has_valid_overlap)
+
+        self._refresh_slider_range()
+
+    def _refresh_info_panel(self) -> None:
+        self.session_info.set_measurement_info(
+            self.loaded_measurement.info if self.loaded_measurement else None
+        )
+        self.session_info.set_video_info(self.video_info)
+        self.session_info.set_aligned_info(self.aligned_info)
+
+    @QtCore.Slot()
+    def reset_crop(self):
+        """Сбрасывает кроп к оригинальному разрешению видео."""
+        self.controller.pipeline.crop_rect = None
+
+        if self.video_info is not None:
+            self.video_info = replace(
+                self.video_info,
+                crop_rect=None,
+                output_width=self.video_info.input_width,
+                output_height=self.video_info.input_height,
+            )
+            self.video_preview.set_aspect_ratio(
+                self.video_info.input_width,
+                self.video_info.input_height,
+            )
+            self._refresh_timeline_and_aligned()
+            self._refresh_info_panel()
+
+        self.update_worker_data()
+        if self.slider.isEnabled():
+            self.request_preview_update(self.slider.value())
+
+        self.reset_crop_action.setEnabled(False)
+        log.info("Crop reset to original resolution")
+
     @QtCore.Slot()
     def crop_done(self, rect: RectangleGeometry):
         video_path = self.controller.pipeline.video_path_input
@@ -270,34 +412,53 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             except Exception as e:
                 log.warning(f"Could not get resolution for crop bounding: {e}")
         log.info(self.tr("Crop done: {xywh}").format(xywh=rect))
-        # Масштабируем ширину превью пропорционально новому кропу
-        # h фиксированная, w меняется
-        if rect.h > 0:
-            current_h = self.preview_stack.height()
-            ratio = rect.w / rect.h
-            new_w = int(current_h * ratio)
-            # Ограничим разумными пределами
-            new_w = max(200, min(new_w, 800))
-            self.video_preview.setMinimumWidth(new_w)
-        
-        # Обновляем превью
+        if rect and rect.h > 0:
+            self.video_preview.set_aspect_ratio(rect.w, rect.h)
+
+        if self.video_info is not None:
+            if rect is None:
+                self.video_info = replace(
+                    self.video_info,
+                    crop_rect=None,
+                    output_width=self.video_info.input_width,
+                    output_height=self.video_info.input_height,
+                )
+                self.video_preview.set_aspect_ratio(
+                    self.video_info.input_width,
+                    self.video_info.input_height,
+                )
+            else:
+                self.video_info = replace(
+                    self.video_info,
+                    crop_rect=rect,
+                    output_width=rect.w,
+                    output_height=rect.h,
+                )
+            self._refresh_info_panel()
+
+        self.reset_crop_action.setEnabled(True)
+
         if self.slider.isEnabled():
             self.request_preview_update(self.slider.value())
 
     @QtCore.Slot()
     def pick_file(self):
-        result = self.controller.pick_file()
-        if result is not None:
-            data, widget = result
-            log.info(self.tr("Selected tda file: {path}").format(path=data.path))
-            
-            self.data_to_gui(data=data, widget=widget)
-            
-            # Обновляем воркер новыми данными
+        loaded = self.controller.pick_file()
+        if loaded is not None:
+            QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.CursorShape.WaitCursor)
+            self.loaded_measurement = loaded
+            data = loaded.data
+
+            log.info(self.tr("Selected data file: {path}").format(path=data.path))
+            self.edit_tda.setText(str(data.path))
+
+            self._refresh_timeline_and_aligned()
+            self._refresh_info_panel()
+
             self.update_worker_data()
-            # Обновляем текущий кадр (чтобы появился оверлей, если видео уже загружено)
             if self.slider.isEnabled():
                 self.request_preview_update(self.slider.value())
+            QtWidgets.QApplication.restoreOverrideCursor()
 
     @QtCore.Slot()
     def pick_video(self):
@@ -305,20 +466,29 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if not res:
             return
         path, size = res
-        
+        video_path = Path(path)
+
+        QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.CursorShape.WaitCursor)
         log.info(self.tr("Selected video: {path}").format(path=path))
         self.edit_video.setText(str(path))
         self.crop_action.setEnabled(True)
-        
-        # Настраиваем размеры превью (сохраняем аспект)
-        h = 400 # Целевая высота
-        if size[1] > 0:
-            w = int(size[0] * h / size[1])
-            self.video_preview.setMinimumHeight(h)
-            self.video_preview.setMinimumWidth(w)
 
-        # Запускаем воркер
+        # Сброс crop от предыдущего видео
+        self.controller.pipeline.crop_rect = None
+        self.reset_crop_action.setEnabled(False)
+
+        if size[1] > 0:
+            self.video_preview.set_aspect_ratio(size[0], size[1])
+
         self.start_preview_worker(path)
+
+        self.video_info = build_video_info(
+            video_path=video_path,
+            crop_rect=self.controller.pipeline.crop_rect,
+        )
+        self._refresh_timeline_and_aligned()
+        self._refresh_info_panel()
+        QtWidgets.QApplication.restoreOverrideCursor()
 
     @QtCore.Slot()
     def show_about(self):
@@ -328,27 +498,20 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def set_stuff_enabled(self, val: bool):
         self.btn_tda.setEnabled(val)
         self.btn_video.setEnabled(val)
-        self.btn_convert.setEnabled(val)
         self.edit_tda.setEnabled(val)
         self.edit_video.setEnabled(val)
         self.cb_excel.setEnabled(val)
         self.crop_action.setEnabled(val)
+        self.reset_crop_action.setEnabled(val and self.controller.pipeline.crop_rect is not None)
         self.slider.setEnabled(val)
-
-    def data_to_gui(self, data: Data, widget: FileDataWidgetBase):
-        self.edit_tda.setText(str(data.path))
-
-        container_layout = self.widget_container.layout()
-        if container_layout is None:
-            container_layout = QtWidgets.QVBoxLayout(self.widget_container)
-            container_layout.setContentsMargins(0, 0, 0, 0)
+        if val:
+            # Восстанавливаем btn_convert по состоянию timeline
+            timeline = self.controller.pipeline.timeline
+            self.btn_convert.setEnabled(
+                timeline is not None and timeline.status != "none"
+            )
         else:
-            while child := container_layout.takeAt(0):
-                if widget_child := child.widget():
-                    widget_child.deleteLater()
-
-        if widget:
-            container_layout.addWidget(widget)
+            self.btn_convert.setEnabled(False)
 
     @QtCore.Slot(float)
     def update_fps(self, fps: float):
@@ -361,12 +524,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.raise_()
         self.render_start_time = None
         self.current_render_fps = 0.0
-        self.fps_label.setText("FPS: --")
-        self.eta_label.setText("Elapsed: 00:00 | ETA: --:--")
+        self.fps_label.hide()
+        self.eta_label.hide()
         self.progressbar.setFormat("%p%")
         if tpl.is_success:
             QtWidgets.QMessageBox.information(
                 self, "VTA video overlay", self.tr("Video processing completed")
+            )
+            self._show_notification(
+                self.tr("Video processing completed"),
+                self.tr("Export finished successfully."),
             )
         else:
             log.error(tpl.traceback_msg)
@@ -374,21 +541,36 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self,
                 self.tr("Error"),
                 self.tr(
-                    f"Video processing failed.\nException occurred.\n\n{tpl.traceback_msg}"
-                ),
+                    "Video processing failed.\nException occurred.\n\n{msg}"
+                ).format(msg=tpl.traceback_msg),
+            )
+            self._show_notification(
+                self.tr("Video processing failed"),
+                self.tr("An error occurred during export."),
             )
         TempDirManager.cleanup()
         self.set_stuff_enabled(True)
         self.progressbar.setValue(0)
+
+    def _show_notification(self, title: str, message: str) -> None:
+        """Показывает системное уведомление (toast) через QSystemTrayIcon."""
+        if not QtWidgets.QSystemTrayIcon.isSystemTrayAvailable():
+            return
+        if not self.tray_icon.isVisible():
+            self.tray_icon.show()
+        self.tray_icon.showMessage(
+            title,
+            message,
+            QtWidgets.QSystemTrayIcon.MessageIcon.Information,
+            5000,  # ms
+        )
 
     def update_progressbar(self, progress: ProcessProgress):
         """Обновляет прогрессбар, ETA и превью во время рендера."""
         self.progressbar.setValue(progress.value)
         self._update_eta_display()
 
-        # Если кадр передан, показываем его в превью
         if progress.frame is not None:
-            # Убедимся, что показываем слой с картинкой (а не лоадер)
             if self.preview_stack.currentIndex() != 0:
                 self.preview_stack.setCurrentIndex(0)
 
@@ -426,6 +608,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         config.graph.enabled = checked
         config.update()
         log.info(f"Graph enabled: {checked}")
+        self.update_worker_data()
         if self.slider.isEnabled():
             self.request_preview_update(self.slider.value())
 
@@ -433,13 +616,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def show_graph_preview(self):
         data = self.controller.pipeline.data
         if data is None:
-             QtWidgets.QMessageBox.warning(self, self.tr("Warning"), self.tr("Please load data first."))
-             return
-             
-        # Свойство speed вызовет calculate_speed() автоматически при необходимости
+            QtWidgets.QMessageBox.warning(self, self.tr("Warning"), self.tr("Please load data first."))
+            return
+
         if data.speed is None:
-             QtWidgets.QMessageBox.warning(self, self.tr("Warning"), self.tr("No speed data available."))
-             return
+            QtWidgets.QMessageBox.warning(self, self.tr("Warning"), self.tr("No speed data available."))
+            return
 
         dlg = GraphPreviewDialog(data.time, data.speed, parent=self)
         dlg.exec()
@@ -449,6 +631,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         dlg = OverlaySettingsDialog(parent=self)
         if dlg.exec() == QtWidgets.QDialog.DialogCode.Accepted:
             self.actionGraphEnabled.setChecked(config.graph.enabled)
+            # Пересоздать renderer с новыми настройками
+            self.update_worker_data()
             if self.slider.isEnabled():
                 self.request_preview_update(self.slider.value())
 
@@ -457,12 +641,17 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if pipeline and pipeline.isRunning():
             log.info("Closing window: stopping pipeline...")
             pipeline.stop()
-            pipeline.wait(3000)
+            if not pipeline.wait(10000):
+                log.error("Pipeline did not stop in time, terminating...")
+                pipeline.terminate()
+                pipeline.wait(2000)
 
-        if self.preview_thread:
+        if self.preview_thread and self.preview_thread.isRunning():
             if self.worker:
-                self.worker.cleanup()
+                QtCore.QMetaObject.invokeMethod(
+                    self.worker, "cleanup", QtCore.Qt.ConnectionType.QueuedConnection  # type: ignore[call-overload]
+                )
             self.preview_thread.quit()
-            self.preview_thread.wait(1000)
+            self.preview_thread.wait(3000)
         super().closeEvent(event)
         QtWidgets.QApplication.quit()

@@ -32,22 +32,20 @@ class TempDirManager:
     @classmethod
     def get_temp_dir(cls) -> Path:
         """Get or create the temporary directory"""
-        if cls._temp_dir is None:
-            with cls._lock:
-                if cls._temp_dir is None:
-                    cls._temp_dir = Path(tempfile.mkdtemp())
-                    cls._initialized = True
-        return cls._temp_dir
+        with cls._lock:
+            if cls._temp_dir is None:
+                cls._temp_dir = Path(tempfile.mkdtemp())
+                cls._initialized = True
+            return cls._temp_dir
 
     @classmethod
     def cleanup(cls):
         """Clean up the temporary directory and reset state"""
-        if cls._temp_dir is not None:
-            with cls._lock:
-                if cls._temp_dir is not None:
-                    clean(cls._temp_dir)
-                    cls._temp_dir = None
-                    cls._initialized = False
+        with cls._lock:
+            if cls._temp_dir is not None:
+                clean(cls._temp_dir)
+                cls._temp_dir = None
+                cls._initialized = False
 
     @classmethod
     def is_initialized(cls) -> bool:

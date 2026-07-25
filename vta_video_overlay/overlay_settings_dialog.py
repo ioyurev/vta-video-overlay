@@ -78,16 +78,17 @@ class OverlaySettingsDialog(QtWidgets.QDialog):
         layout_codec = QtWidgets.QHBoxLayout()
         layout_codec.addWidget(QtWidgets.QLabel(self.tr("Codec:")))
         self.combo_codec = QtWidgets.QComboBox()
-        available_codecs = get_available_codecs()
-        for label, codec_id in available_codecs:
-            self.combo_codec.addItem(label, codec_id)
-
-        # Устанавливаем текущий кодек
-        idx = self.combo_codec.findData(config.video_encoding.codec)
-        if idx >= 0:
-            self.combo_codec.setCurrentIndex(idx)
         layout_codec.addWidget(self.combo_codec)
         layout_encoder.addLayout(layout_codec)
+
+        if get_available_codecs.cache_info().currsize > 0:
+            self._populate_codecs(get_available_codecs())
+        else:
+            self.combo_codec.addItem(self.tr("Detecting codecs..."), config.video_encoding.codec)
+            self.combo_codec.setEnabled(False)
+            self._codec_worker = CodecDetectWorker(self)
+            self._codec_worker.codecs_detected.connect(self._on_codecs_detected)
+            self._codec_worker.start()
 
         # 2. Ползунок качества CRF (0 - Lossless, 15-17 - Visually Lossless, 23 - Recommended)
         def format_crf_label(val: int) -> str:
@@ -196,3 +197,26 @@ class OverlaySettingsDialog(QtWidgets.QDialog):
 
         config.update()
         self.accept()
+
+    def _populate_codecs(self, codecs: list[tuple[str, str]]):
+        self.combo_codec.clear()
+        self.combo_codec.setEnabled(True)
+        for label, codec_id in codecs:
+            self.combo_codec.addItem(label, codec_id)
+
+        idx = self.combo_codec.findData(config.video_encoding.codec)
+        if idx >= 0:
+            self.combo_codec.setCurrentIndex(idx)
+
+    def _on_codecs_detected(self, codecs: list[tuple[str, str]]):
+        self._populate_codecs(codecs)
+
+
+class CodecDetectWorker(QtCore.QThread):
+    codecs_detected = QtCore.Signal(list)
+
+    def run(self):
+        from vta_video_overlay.codec_checker import get_available_codecs
+
+        codecs = get_available_codecs()
+        self.codecs_detected.emit(codecs)

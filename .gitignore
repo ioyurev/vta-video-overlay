@@ -1,6 +1,7 @@
 example
 vta_video_overlay/ui/*.py
-assets/*.qm
+*.qm
+logo.png
 __pycache__
 pyinstaller/
 logs

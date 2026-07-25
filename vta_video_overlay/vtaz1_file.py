@@ -12,9 +12,15 @@ Key Features:
 File Format Specifications (v1.0+):
 - metadata.json: sample, operator, vtaz_version, created_at
 - data_input.csv: time-EMF measurements
-- calibration.json: full calibration data
+- calibration.json: full calibration data (stores ADDITIVE correction ΔT(T), not absolute T)
 - thermocouple.json: thermocouple coefficients
 - cjc.json: cold junction compensation data
+
+Temperature Reconstruction Formula:
+    1. E_comp  = E_measured + E_cold
+    2. T_raw   = polyval(thermocouple_coeffs, E_comp)
+    3. ΔT      = polyval(calibration_coeffs, T_raw)
+    4. T_final = T_raw + ΔT  <-- Additive correction applied here
 
 Typical Usage Example:
     vtaz_file = VTAZ1File.load(Path("measurement.vtaz"))
@@ -33,6 +39,7 @@ from PySide6 import QtWidgets
 
 from vta_video_overlay.data_file import Data
 from vta_video_overlay.file_widget_base import FileDataWidgetBase
+from vta_video_overlay.info_models import MeasurementInfo
 from vta_video_overlay.vtaz0_file import Metadata, read_csv
 
 
@@ -110,6 +117,7 @@ class VTAZ1File(BaseModel):
         np.ndarray
     ]  # Температура может быть None если калибровка отсутствует
     calibration_coeffs: list[float] | None
+    calibration_type: str | None = None
     thermocouple_coeffs: list[float] | None
     cjc_data: dict | None
 
@@ -160,37 +168,37 @@ class VTAZ1File(BaseModel):
 
             # print(f"{compensated_emf=}")
 
-            # 2. Преобразование ЭДС в температуру
+            # 2. Преобразование ЭДС в сырую температуру
             # Коэффициенты термопары в JSON: [c0, c1, ..., c8] (от младшей степени к старшей)
             # np.polyval требует [c8, ..., c0] (от старшей к младшей), поэтому разворачиваем [::-1]
-            temperature = np.polyval(thermocouple_coeffs[::-1], compensated_emf)
-
-            # print(f"{temperature=}")
+            raw_temperature = np.polyval(thermocouple_coeffs[::-1], compensated_emf)
 
             # 3. Применение калибровки
+            # IMPORTANT CONTRACT:
+            # calibration_coeffs in VTAZ v1.x represent an additive correction polynomial ΔT(T),
+            # NOT the absolute calibrated temperature. We must add ΔT to raw_temperature.
             calc_coeffs = list(calibration_coeffs)
             while len(calc_coeffs) < 3:
                 calc_coeffs.append(0.0)
-            
+
             if calibration_type == "linear":
                 # Берем [a, b] для ax + b
                 cal_poly_coeffs = calc_coeffs[:2]
-            else: # quadratic
+            else:  # quadratic
                 # Берем [a, b, c] для ax^2 + bx + c
                 cal_poly_coeffs = calc_coeffs[:3]
 
-            calibration_correction = np.polyval(cal_poly_coeffs, temperature)
-            temperature = temperature + calibration_correction
-
-            # print(f"{temperature=}")
+            temp_correction_delta = np.polyval(cal_poly_coeffs, raw_temperature)
+            final_temperature = raw_temperature + temp_correction_delta
 
         return cls(
             metadata=metadata,
             time=time,
             emf=emf,
-            temp=temperature,
+            temp=final_temperature,
             path=path,
             calibration_coeffs=calibration_coeffs,
+            calibration_type=calibration_type,
             thermocouple_coeffs=thermocouple_coeffs,
             cjc_data=cjc_data,
         )
@@ -205,6 +213,49 @@ class VTAZ1File(BaseModel):
         data.temp = self.temp
 
         return data
+
+    def to_info(self) -> MeasurementInfo:
+        t_min = float(self.time[0]) if len(self.time) else 0.0
+        t_max = float(self.time[-1]) if len(self.time) else 0.0
+        emf_min = float(self.emf.min()) if len(self.emf) else None
+        emf_max = float(self.emf.max()) if len(self.emf) else None
+        temp_min = (
+            float(self.temp.min())
+            if self.temp is not None and len(self.temp)
+            else None
+        )
+        temp_max = (
+            float(self.temp.max())
+            if self.temp is not None and len(self.temp)
+            else None
+        )
+
+        return MeasurementInfo(
+            source_format="VTAZ",
+            version=self.metadata.vtaz_version,
+            path=self.path,
+            sample=self.metadata.sample,
+            operator=self.metadata.operator,
+            points=len(self.time),
+            t_min_sec=t_min,
+            t_max_sec=t_max,
+            duration_sec=t_max - t_min,
+            emf_min=emf_min,
+            emf_max=emf_max,
+            temp_available=self.temp is not None,
+            temp_min=temp_min,
+            temp_max=temp_max,
+            calibration_available=self.calibration_coeffs is not None,
+            calibration_type=self.calibration_type,
+            calibration_semantics="ΔT(T), additive correction",
+            calibration_coeffs_text=str(self.calibration_coeffs)
+            if self.calibration_coeffs
+            else None,
+            thermocouple_coeffs_text=str(self.thermocouple_coeffs)
+            if self.thermocouple_coeffs
+            else None,
+            cjc_text=str(self.cjc_data) if self.cjc_data else None,
+        )
 
     def create_widget(self):
         """Create widget for displaying VTAZ1 file information"""

@@ -45,7 +45,7 @@ class App(QtWidgets.QApplication):
         self.set_language()
         c = Controller()
         w = MainWindow(controller=c)
-        w.show()
+        w.showMaximized()
         return self.exec()
 
 

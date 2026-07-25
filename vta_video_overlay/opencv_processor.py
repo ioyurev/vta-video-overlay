@@ -11,6 +11,7 @@ from vta_video_overlay.config import config
 from vta_video_overlay.crop_selection_widgets import RectangleGeometry
 from vta_video_overlay.data_collections import ProcessProgress
 from vta_video_overlay.frame_renderer import FrameRenderer
+from vta_video_overlay.info_models import TimelineSelection
 from vta_video_overlay.opencv_frame import CVFrame
 from vta_video_overlay.video_context import VideoContext
 from vta_video_overlay.video_data import VideoData
@@ -24,12 +25,14 @@ class CVProcessor(QtCore.QObject):
         self,
         video_data: VideoData,
         path_output: Path,
+        timeline: TimelineSelection,
         crop_rect: RectangleGeometry | None = None,
         graph_enabled: bool = True,
     ):
         super().__init__()
         self.video_data = video_data
         self.path_output = path_output
+        self.timeline = timeline
         self.crop_rect = crop_rect
         self.graph_enabled = graph_enabled
         self.is_interrupted = False
@@ -46,7 +49,7 @@ class CVProcessor(QtCore.QObject):
         renderer = FrameRenderer(
             video_ctx=video_ctx,
             data=self.video_data.data,
-            timestamps=self.video_data.aligned.timestamps,
+            timestamps=self.timeline.kept_timestamps_sec,
             crop_rect=self.crop_rect,
             graph_enabled=self.graph_enabled,
         )
@@ -59,7 +62,7 @@ class CVProcessor(QtCore.QObject):
 
         # Для VFR-видео (переменная экспозиция камеры) CAP_PROP_FPS возвращает
         # номинальный FPS, а не реальный. Вычисляем средний FPS из timestamps.
-        ts = self.video_data.aligned.timestamps
+        ts = self.timeline.kept_timestamps_sec
         if len(ts) > 1 and (ts[-1] - ts[0]) > 0:
             real_fps = (len(ts) - 1) / (ts[-1] - ts[0])
         else:
@@ -140,9 +143,8 @@ class CVProcessor(QtCore.QObject):
             idx, raw_frame = args
             return idx, renderer.render_overlay(raw_frame, idx)
 
-        # Инициализируем общее количество кадров по точным временным меткам FFmpeg,
-        # так как OpenCV (CAP_PROP_FRAME_COUNT) занижает число кадров для ASF/WMV файлов.
-        max_frames = len(renderer.aligned.timestamps)
+        source_indices = self.timeline.source_frame_indices
+        max_frames = len(source_indices)
 
         with ThreadPoolExecutor(max_workers=num_threads) as pool:
             for batch_start in range(0, max_frames, batch_size):
@@ -155,10 +157,11 @@ class CVProcessor(QtCore.QObject):
 
                 t_batch_0 = time.perf_counter()
                 raw_items: list[tuple[int, np.ndarray]] = []
-                for i in range(batch_start, batch_end):
-                    raw = video_ctx.read_frame(i)
+                for kept_i in range(batch_start, batch_end):
+                    source_idx = int(source_indices[kept_i])
+                    raw = video_ctx.read_frame(source_idx)
                     if raw is not None:
-                        raw_items.append((i, raw))
+                        raw_items.append((kept_i, raw.copy()))
 
                 if not raw_items:
                     continue

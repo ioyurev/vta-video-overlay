@@ -22,7 +22,7 @@ Usage Flow:
 
 from pathlib import Path
 
-from PySide6 import QtCore, QtWidgets
+from PySide6 import QtCore, QtGui, QtWidgets
 
 from vta_video_overlay.crop_selection_widgets import RectangleGeometry
 from vta_video_overlay.ffmpeg_utils import FFmpeg
@@ -71,8 +71,11 @@ class CropSelectionWindow(QtWidgets.QDialog, Ui_Dialog):
         new_pos = int(self.graphicsView.player.duration() * value / 100)
         self.graphicsView.player.setPosition(new_pos)
 
-    def show(self):
-        super().show()
+    def showEvent(self, event: QtGui.QShowEvent):
+        super().showEvent(event)
+        QtCore.QTimer.singleShot(0, self._init_after_show)
+
+    def _init_after_show(self):
         w = self.graphicsView.width()
         h = self.graphicsView.height()
         self.spinBox_x.setMaximum(w)

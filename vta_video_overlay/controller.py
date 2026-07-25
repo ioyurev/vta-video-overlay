@@ -23,9 +23,9 @@ from PySide6 import QtCore, QtWidgets
 
 from vta_video_overlay.crop_selection_widgets import RectangleGeometry
 from vta_video_overlay.crop_selection_window import CropSelectionWindow
-from vta_video_overlay.data_file import Data
 from vta_video_overlay.ffmpeg_utils import FFmpeg
-from vta_video_overlay.file_loader import load_file_with_widget
+from vta_video_overlay.file_loader import load_measurement
+from vta_video_overlay.info_models import LoadedMeasurement
 from vta_video_overlay.pipeline import Pipeline
 
 
@@ -43,7 +43,7 @@ class Controller(QtCore.QObject):
 
     @QtCore.Slot()
     def crop(self):
-        if self.pipeline.video_path_input == "":
+        if not self.pipeline.video_path_input:
             return
         self.sel_win = CropSelectionWindow(parent=self.parent())
         self.sel_win.accepted.connect(self.crop_done_slot)
@@ -56,27 +56,31 @@ class Controller(QtCore.QObject):
         self.crop_done.emit(crop_rect)
 
     @QtCore.Slot()
-    def pick_file(self) -> tuple[Data, object] | None:
+    def pick_file(self) -> LoadedMeasurement | None:
         file_filter = self.tr("Data files (*.tda *.vtaz)")
         path = pick_path_open(filter=file_filter)
         if path == "":
             return None
-        path = Path(path)
-        data, widget = load_file_with_widget(path=path)
-        self.pipeline.data = data
-        return data, widget
+        path_obj = Path(path)
+        loaded = load_measurement(path=path_obj)
+        self.pipeline.data = loaded.data
+        return loaded
 
     @QtCore.Slot()
     def pick_video(self):
         path = pick_path_open(filter=self.tr("Video(*.asf *.mp4);;All files(*.*)"))
         if path == "":
             return
-        size = FFmpeg().get_resolution(video_path=path)
+        size = FFmpeg().get_resolution(video_path=Path(path))
         self.pipeline.video_path_input = Path(path)
         return path, size
 
     @QtCore.Slot()
     def overlay(self, convert_excel: bool = True):
+        if self.pipeline.data is None:
+            log.error("Cannot overlay: data is not loaded.")
+            return
+
         path_str = pick_path_save()
         if path_str == "":
             return

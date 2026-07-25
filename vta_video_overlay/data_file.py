@@ -9,12 +9,14 @@ from vta_video_overlay.tda_headers import Headers
 
 
 class Data(QtCore.QObject):
-    operator: str
-    sample: str
-    path: Path
-    time: np.ndarray
-    emf: np.ndarray
-    temp: np.ndarray | None
+    def __init__(self, parent: QtCore.QObject | None = None):
+        super().__init__(parent)
+        self.operator: str = ""
+        self.sample: str = ""
+        self.path: Path = Path()
+        self.time: np.ndarray = np.array([], dtype=float)
+        self.emf: np.ndarray = np.array([], dtype=float)
+        self.temp: np.ndarray | None = None
 
     @property
     def speed(self) -> np.ndarray | None:

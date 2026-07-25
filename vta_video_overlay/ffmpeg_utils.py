@@ -130,13 +130,21 @@ class FFmpeg(QtCore.QObject):
         path_output: Path,
         signal: QtCore.SignalInstance,
     ):
+        from vta_video_overlay.config import config
+
         cmd = [
             "ffmpeg",
+            "-y",
             "-i",
             str(path_input),
-            "-strict",
-            "experimental",
-            "-y",  # Overwrite output file if exists
+            "-c:v",
+            config.video_encoding.codec,
+            "-crf",
+            str(config.video_encoding.crf),
+            "-preset",
+            config.video_encoding.preset,
+            "-pix_fmt",
+            config.video_encoding.pix_fmt,
             str(path_output),
         ]
         ff = FfmpegProgress(cmd)

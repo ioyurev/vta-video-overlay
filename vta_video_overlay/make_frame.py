@@ -71,14 +71,18 @@ def make_frame(
     if config.text.show_time:
         _m, _s = divmod(time, 60)
         last_top_bbox = cvframe.put_text(
-            text=QtCore.QCoreApplication.tr("t: {m:02.0f}:{s:04.1f}").format(m=_m, s=_s),  # type: ignore
+            text=QtCore.QCoreApplication.translate(
+                "make_frame", "t: {m:02.0f}:{s:04.1f}"
+            ).format(m=_m, s=_s),
             xy=(config.text.margin_x, get_top_y()),
             align=Alignment.TOP_LEFT,
         )
 
     if config.text.show_emf:
         last_top_bbox = cvframe.put_text(
-            text=QtCore.QCoreApplication.tr("E(mV): {emf:.2f}").format(emf=emf),  # type: ignore
+            text=QtCore.QCoreApplication.translate(
+                "make_frame", "E(mV): {emf:.2f}"
+            ).format(emf=emf),
             xy=(config.text.margin_x, get_top_y()),
             align=Alignment.TOP_LEFT,
         )
@@ -92,7 +96,9 @@ def make_frame(
 
     if config.text.show_speed and temp_speed is not None:
         last_top_bbox = cvframe.put_text(
-            text=QtCore.QCoreApplication.tr("dT/dt(°C/s): {speed:.2f}").format(speed=temp_speed),  # type: ignore
+            text=QtCore.QCoreApplication.translate(
+                "make_frame", "dT/dt(°C/s): {speed:.2f}"
+            ).format(speed=temp_speed),
             xy=(config.text.margin_x, get_top_y()),
             align=Alignment.TOP_LEFT,
         )

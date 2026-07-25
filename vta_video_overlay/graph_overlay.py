@@ -1,3 +1,4 @@
+import threading
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 import numpy as np
@@ -16,7 +17,9 @@ class GraphOverlay:
         width: int,
         height: int,
         time_window_sec: float = 30.0,
+        timestamps: np.ndarray | None = None,
     ):
+        self._lock = threading.Lock()
         self.data = np.nan_to_num(data, nan=0.0, posinf=0.0, neginf=0.0)
         self.fps = fps
         self.time_window_sec = time_window_sec
@@ -24,8 +27,13 @@ class GraphOverlay:
         self.width = width
         self.height = height
         
-        # Полная временная ось
-        self.t_full = np.arange(len(data)) / fps
+        # Полная временная ось (нормализованное время)
+        if timestamps is not None:
+            self.t_full = (
+                timestamps - timestamps[0] if len(timestamps) > 0 else timestamps
+            )
+        else:
+            self.t_full = np.arange(len(data)) / fps
         
         # --- НАСТРОЙКА MATPLOTLIB ---
         self.dpi = 100
@@ -61,7 +69,7 @@ class GraphOverlay:
             pad=3
         )
         
-        # Линия графика
+        # Линия графика (animated=True используется для ручного blitting)
         self.line, = self.ax.plot(
             [], [], 
             color=(TEXT_COLOR[2]/255, TEXT_COLOR[1]/255, TEXT_COLOR[0]/255), 
@@ -69,7 +77,7 @@ class GraphOverlay:
             animated=True
         )
         
-        # Маркер текущей точки
+        # Маркер текущей точки (animated=True используется для ручного blitting)
         self.marker, = self.ax.plot(
             [], [], 
             marker='o', 
@@ -96,75 +104,82 @@ class GraphOverlay:
 
     def get_frame_overlay(self, current_idx: int) -> np.ndarray:
         """Рендерит график для текущего кадра."""
-        current_time = current_idx / self.fps
-        
-        # Расчет границ X
-        if current_time <= self.time_window_sec:
-            x_min = 0.0
-            x_max = max(current_time, 0.1)
-        else:
-            x_min = current_time - self.time_window_sec
-            x_max = current_time
-        
-        # Расчет границ Y
-        start_idx = max(0, current_idx - self.window_frames)
-        end_idx = current_idx + 1
-        visible_data = self.data[start_idx:end_idx]
-        
-        if len(visible_data) > 0:
-            y_min, y_max = float(visible_data.min()), float(visible_data.max())
-            margin = (y_max - y_min) * 0.1
-            if margin == 0:
-                margin = 1.0
-            y_min -= margin
-            y_max += margin
-        else:
-            y_min, y_max = -1.0, 1.0
-        
-        new_xlim = (x_min, x_max)
-        new_ylim = (y_min, y_max)
-        
-        # Проверяем, изменились ли лимиты
-        limits_changed = (
-            self._background is None
-            or self._last_xlim != new_xlim
-            or self._last_ylim != new_ylim
-        )
-        
-        if limits_changed:
-            self.ax.set_xlim(new_xlim)
-            self.ax.set_ylim(new_ylim)
-            self._last_xlim = new_xlim
-            self._last_ylim = new_ylim
-            self._update_background()
-        
-        # Восстанавливаем фон
-        self.canvas.restore_region(self._background)
-        
-        # Обновляем данные линии
-        t_slice = self.t_full[:end_idx]
-        data_slice = self.data[:end_idx]
-        self.line.set_data(t_slice, data_slice)
-        
-        # Обновляем маркер
-        if current_idx < len(self.data):
-            self.marker.set_data([current_time], [self.data[current_idx]])
-        
-        # Рисуем только анимированные элементы
-        self.ax.draw_artist(self.line)
-        self.ax.draw_artist(self.marker)
-        
-        # Blit
-        self.canvas.blit(self.ax.bbox)
-        
-        # Получаем буфер RGBA
-        buf = np.asarray(self.canvas.buffer_rgba()).copy()
-        
-        # Конвертируем RGBA -> BGRA
-        bgra = np.empty_like(buf)
-        bgra[:, :, 0] = buf[:, :, 2]
-        bgra[:, :, 1] = buf[:, :, 1]
-        bgra[:, :, 2] = buf[:, :, 0]
-        bgra[:, :, 3] = buf[:, :, 3]
-        
-        return bgra
+        with self._lock:
+            current_time = (
+                float(self.t_full[current_idx])
+                if current_idx < len(self.t_full)
+                else current_idx / self.fps
+            )
+            
+            # Расчет границ X
+            if current_time <= self.time_window_sec:
+                x_min = 0.0
+                x_max = max(current_time, 0.1)
+            else:
+                x_min = current_time - self.time_window_sec
+                x_max = current_time
+            
+            # Расчет границ Y
+            start_idx = max(0, current_idx - self.window_frames)
+            end_idx = current_idx + 1
+            visible_data = self.data[start_idx:end_idx]
+            
+            if len(visible_data) > 0:
+                y_min, y_max = float(visible_data.min()), float(visible_data.max())
+                margin = (y_max - y_min) * 0.1
+                if margin == 0:
+                    margin = 1.0
+                y_min -= margin
+                y_max += margin
+            else:
+                y_min, y_max = -1.0, 1.0
+            
+            new_xlim = (x_min, x_max)
+            new_ylim = (y_min, y_max)
+            
+            # Проверяем, изменились ли лимиты
+            limits_changed = (
+                self._background is None
+                or self._last_xlim != new_xlim
+                or self._last_ylim != new_ylim
+            )
+            
+            if limits_changed:
+                self.ax.set_xlim(new_xlim)
+                self.ax.set_ylim(new_ylim)
+                self._last_xlim = new_xlim
+                self._last_ylim = new_ylim
+                self._update_background()
+            
+            # Восстанавливаем фон
+            self.canvas.restore_region(self._background)
+            
+            # Обновляем данные линии
+            t_slice = self.t_full[:end_idx]
+            data_slice = self.data[:end_idx]
+            self.line.set_data(t_slice, data_slice)
+            
+            # Обновляем маркер
+            if current_idx < len(self.data):
+                self.marker.set_data([current_time], [self.data[current_idx]])
+            
+            # Рисуем только анимированные элементы
+            self.ax.draw_artist(self.line)
+            self.ax.draw_artist(self.marker)
+            
+            # Blit
+            self.canvas.blit(self.ax.bbox)
+            
+            # Получаем буфер RGBA без лишних промежуточных копий
+            buf = np.frombuffer(self.canvas.buffer_rgba(), dtype=np.uint8).reshape(
+                self.height, self.width, 4
+            )
+            
+            # Конвертируем RGBA -> BGRA
+            bgra = np.empty_like(buf)
+            bgra[:, :, 0] = buf[:, :, 2]
+            bgra[:, :, 1] = buf[:, :, 1]
+            bgra[:, :, 2] = buf[:, :, 0]
+            bgra[:, :, 3] = buf[:, :, 3]
+            
+            return bgra

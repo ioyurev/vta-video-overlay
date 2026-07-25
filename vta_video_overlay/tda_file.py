@@ -32,6 +32,7 @@ from PySide6 import QtWidgets
 
 from vta_video_overlay.data_file import Data
 from vta_video_overlay.file_widget_base import FileDataWidgetBase
+from vta_video_overlay.info_models import MeasurementInfo
 from vta_video_overlay.tda_headers import Headers
 
 
@@ -67,6 +68,7 @@ class TDAFileWidget(FileDataWidgetBase):
 class TDAFile(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
+    path: Path
     sample: str
     operator: str
     time: np.ndarray
@@ -104,11 +106,18 @@ class TDAFile(BaseModel):
             temp = None
 
         return cls(
-            sample=sample, operator=operator, time=time, emf=emf, temp=temp, coeff=coeff
+            path=path,
+            sample=sample,
+            operator=operator,
+            time=time,
+            emf=emf,
+            temp=temp,
+            coeff=coeff,
         )
 
     def to_data(self) -> Data:
         data = Data()
+        data.path = self.path
         data.sample = self.sample
         data.operator = self.operator
         data.time = self.time
@@ -116,12 +125,50 @@ class TDAFile(BaseModel):
         data.temp = self.temp
         return data
 
-    def create_widget(self, path: Path):
+    def to_info(self) -> MeasurementInfo:
+        t_min = float(self.time[0]) if len(self.time) else 0.0
+        t_max = float(self.time[-1]) if len(self.time) else 0.0
+        emf_min = float(self.emf.min()) if len(self.emf) else None
+        emf_max = float(self.emf.max()) if len(self.emf) else None
+        temp_min = (
+            float(self.temp.min())
+            if self.temp is not None and len(self.temp)
+            else None
+        )
+        temp_max = (
+            float(self.temp.max())
+            if self.temp is not None and len(self.temp)
+            else None
+        )
+
+        return MeasurementInfo(
+            source_format="TDA",
+            version="legacy",
+            path=self.path,
+            sample=self.sample,
+            operator=self.operator,
+            points=len(self.time),
+            t_min_sec=t_min,
+            t_max_sec=t_max,
+            duration_sec=t_max - t_min,
+            emf_min=emf_min,
+            emf_max=emf_max,
+            temp_available=self.temp is not None,
+            temp_min=temp_min,
+            temp_max=temp_max,
+            calibration_available=self.temp is not None and bool(self.coeff),
+            calibration_type="polynomial" if self.coeff else None,
+            calibration_semantics="EMF → T",
+            calibration_coeffs_text=", ".join(self.coeff) if self.coeff else None,
+        )
+
+    def create_widget(self, path: Path | None = None) -> TDAFileWidget:
         """Create widget for displaying TDA file information"""
+        target_path = path if path is not None else self.path
         return TDAFileWidget(
             sample=self.sample,
             operator=self.operator,
-            path=path,
+            path=target_path,
             time=self.time,
             emf=self.emf,
             temp=self.temp,
@@ -130,17 +177,25 @@ class TDAFile(BaseModel):
 
 
 def parse_lines(lines: list[str]) -> tuple[list[str], str, str, list[str]]:
+    sample_name: str = ""
+    operator: str = ""
+    coeff: list[str] = []
+    start_index: int = len(lines)
+
     for index, line in enumerate(lines):
-        if line[0] == "<":
-            if line.startswith("<NAME>"):
-                sample_name = line[7 : len(line) - 1]
-            elif line.startswith("<AUTOR>"):
-                operator = line[8 : len(line) - 1]
-            elif line.startswith("<FORMULE>"):
-                coeff = line[12 : len(line) - 1].split(sep=" ")
+        stripped = line.rstrip("\n\r")
+        if not stripped:
             continue
+        if stripped[0] == "<":
+            if stripped.startswith("<NAME>"):
+                sample_name = stripped[7:]
+            elif stripped.startswith("<AUTOR>"):
+                operator = stripped[8:]
+            elif stripped.startswith("<FORMULE>"):
+                coeff = stripped[12:].split()
         else:
             start_index = index
             break
-    lines_data = lines[start_index:-1]
+
+    lines_data = lines[start_index:-1] if start_index < len(lines) else []
     return lines_data, sample_name, operator, coeff

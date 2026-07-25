@@ -51,15 +51,18 @@ class AlignedData:
     @classmethod
     def from_data(cls, timestamps: np.ndarray, data: "Data") -> "AlignedData":
         """Создает выровненные данные из Data."""
+        normalized_timestamps = (
+            timestamps - timestamps[0] if len(timestamps) > 0 else timestamps
+        )
         emf = np.interp(timestamps, data.time, data.emf)
-        
+
         if data.temp is not None:
             temp = np.interp(timestamps, data.time, data.temp)
-            speed = calculate_speed(timestamps, temp)
+            speed = calculate_speed(normalized_timestamps, temp)
         else:
             temp = None
             speed = None
-        
+
         return cls(timestamps=timestamps, emf=emf, temp=temp, speed=speed)
     
     def at_index(self, idx: int) -> Tuple[float, float | None, float | None]:
