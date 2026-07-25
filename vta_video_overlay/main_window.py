@@ -224,10 +224,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     @QtCore.Slot(int)
     def handle_slider_moved(self, val):
-        """Слайдер перемещен: обновляем время и запрашиваем превью."""
+        """Слайдер тянут: обновляем только текст времени (быстро)."""
         if self.current_fps > 0:
             self.lbl_time.setText(f"{val / self.current_fps:.1f}s")
-        self.request_preview_update(val)
 
     @QtCore.Slot()
     def handle_slider_released(self):
