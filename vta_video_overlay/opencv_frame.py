@@ -142,52 +142,59 @@ class CVFrame:
         font = CV_FONT_SMALL if small else CV_FONT_MAIN
         size = config.text.additional_size if small else config.text.main_size
 
-        if align == Alignment.TOP_LEFT:
-            flags = cv2.PUT_TEXT_ALIGN_LEFT | cv2.PUT_TEXT_ORIGIN_TL
-        elif align == Alignment.TOP_RIGHT:
-            flags = cv2.PUT_TEXT_ALIGN_RIGHT | cv2.PUT_TEXT_ORIGIN_TL
-        elif align == Alignment.BOTTOM_LEFT:
-            flags = cv2.PUT_TEXT_ALIGN_LEFT | cv2.PUT_TEXT_ORIGIN_BL
-        elif align == Alignment.BOTTOM_RIGHT:
-            flags = cv2.PUT_TEXT_ALIGN_RIGHT | cv2.PUT_TEXT_ORIGIN_BL
-        else:
-            flags = cv2.PUT_TEXT_ALIGN_LEFT | cv2.PUT_TEXT_ORIGIN_TL
+        # 1. Измеряем габариты текста относительно (0, 0)
+        rect0 = cv2.getTextSize((self.size.width, self.size.height), text, (0, 0), font, size, weight)
+        rx0, ry0, rw, rh = rect0
+        ascent = -ry0
+        descent = ry0 + rh
 
-        # Вычисляем bounding box текста через OpenCV 5 API
-        rect = cv2.getTextSize(
-            (self.size.width, self.size.height),
-            text,
-            xy,
-            font,
-            size,
-            weight,
-            flags,
-        )
-        rx, ry, rw, rh = rect
+        x, y = xy
+
+        # 2. Вычисляем точку org (baseline x, y) в зависимости от выравнивания
+        if align == Alignment.TOP_LEFT:
+            org_x = x
+            org_y = y + ascent
+        elif align == Alignment.TOP_RIGHT:
+            org_x = x - rw
+            org_y = y + ascent
+        elif align == Alignment.BOTTOM_LEFT:
+            org_x = x
+            org_y = y - descent
+        elif align == Alignment.BOTTOM_RIGHT:
+            org_x = x - rw
+            org_y = y - descent
+        else:
+            org_x = x
+            org_y = y + ascent
+
+        # 3. Вычисляем точные границы прямоугольника текста
+        top = org_y - ascent
+        left = org_x
+        right = org_x + rw
+        bottom = org_y + descent
 
         pad = config.text.bg_padding
-        x1 = max(0, rx - pad)
-        y1 = max(0, ry - pad)
-        x2 = min(self.size.width, rx + rw + pad)
-        y2 = min(self.size.height, ry + rh + pad)
+        x1 = max(0, left - pad)
+        y1 = max(0, top - pad)
+        x2 = min(self.size.width, right + pad)
+        y2 = min(self.size.height, bottom + pad)
 
-        # Отрисовка полупрозрачной плашки фона
+        # 4. Отрисовка полупрозрачной плашки фона
         if bg_color is not None and x2 > x1 and y2 > y1:
             roi = self.image[y1:y2, x1:x2]
             bg_arr = np.array(bg_color, dtype=np.float32)
             blended = (roi.astype(np.float32) * (1.0 - BG_ALPHA) + bg_arr * BG_ALPHA)
             self.image[y1:y2, x1:x2] = blended.astype(np.uint8)
 
-        # Отрисовка текста поверх плашки
+        # 5. Отрисовка текста поверх плашки
         cv2.putText(
             img=self.image,
             text=text,
-            org=xy,
+            org=(org_x, org_y),
             color=color,
             fface=font,
             size=size,
             weight=weight,
-            flags=flags,
         )
 
         return (x1, y1, x2, y2)
