@@ -373,6 +373,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     @QtCore.Slot(bool)
     def toggle_graph_enabled(self, checked: bool):
         config.graph.enabled = checked
+        config.update()
         log.info(f"Graph enabled: {checked}")
         if self.slider.isEnabled():
             self.request_preview_update(self.slider.value())
