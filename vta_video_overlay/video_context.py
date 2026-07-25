@@ -1,5 +1,5 @@
 from pathlib import Path
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import cv2
 import numpy as np
@@ -13,11 +13,20 @@ class VideoContext:
     total_frames: int
     width: int
     height: int
+    _last_index: int = field(default=-1, init=False)
+    _last_img: np.ndarray | None = field(default=None, init=False)
     
     @classmethod
     def open(cls, path: str | Path) -> "VideoContext":
         """Открывает видео и создает контекст."""
-        cap = cv2.VideoCapture(str(path))
+        cap = cv2.VideoCapture(
+            str(path),
+            cv2.CAP_FFMPEG,
+            [cv2.CAP_PROP_HW_ACCELERATION, cv2.VIDEO_ACCELERATION_ANY],
+        )
+        if not cap.isOpened():
+            cap = cv2.VideoCapture(str(path))
+            
         if not cap.isOpened():
             raise RuntimeError(f"Cannot open video: {path}")
         
@@ -35,12 +44,32 @@ class VideoContext:
         )
     
     def read_frame(self, index: int) -> np.ndarray | None:
-        """Читает кадр по индексу."""
+        """Читает кадр по индексу с кэшированием и последовательным пропуском кадров."""
+        if index == self._last_index and self._last_img is not None:
+            return self._last_img
+
+        diff = index - self._last_index
+        if 0 < diff <= 60:
+            img = None
+            for _ in range(diff):
+                ret, img = self.cap.read()
+                if not ret:
+                    break
+            if img is not None:
+                self._last_index = index
+                self._last_img = img
+                return img
+
         self.cap.set(cv2.CAP_PROP_POS_FRAMES, index)
         ret, img = self.cap.read()
-        return img if ret else None
+        if ret and img is not None:
+            self._last_index = index
+            self._last_img = img
+            return img
+        return None
     
     def close(self):
         """Закрывает видео."""
         if self.cap:
             self.cap.release()
+            self._last_img = None

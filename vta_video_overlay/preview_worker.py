@@ -15,6 +15,7 @@ class PreviewWorker(QtCore.QObject):
         self.video_path = video_path
         self.video_ctx: VideoContext | None = None
         self.renderer: FrameRenderer | None = None
+        self.latest_requested_index: int = -1
 
     @QtCore.Slot()
     def init_video(self):
@@ -39,8 +40,8 @@ class PreviewWorker(QtCore.QObject):
     @QtCore.Slot(int, object, object)
     def request_frame(self, frame_index: int, data, crop_rect):
         """Генерирует кадр."""
-        # Проверяем, нужно ли пересоздать рендерер
-        # Это нужно, если рендерера нет, ИЛИ если изменился кроп
+        self.latest_requested_index = frame_index
+
         needs_update = (
             self.renderer is None 
             or self.renderer.crop_rect != crop_rect
@@ -53,7 +54,7 @@ class PreviewWorker(QtCore.QObject):
             return
         
         frame = self.renderer.render_frame(frame_index)
-        if frame:
+        if frame and frame_index == self.latest_requested_index:
             time_sec = frame_index / self.video_ctx.fps
             self.frame_ready.emit(frame.to_pixmap(), time_sec)
 
