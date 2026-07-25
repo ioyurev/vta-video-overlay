@@ -41,15 +41,17 @@ class CVFrame:
     def _update_size(self):
         self.size = Size(self.image.shape[1], self.image.shape[0])
 
-    def to_pixmap(self):
-        bytes_per_line = 3 * self.size.width
+    def to_pixmap(self) -> QtGui.QPixmap:
+        img_c = np.ascontiguousarray(self.image)
+        h, w = img_c.shape[:2]
+        bytes_per_line = int(img_c.strides[0])
         q_image = QtGui.QImage(
-            np.ascontiguousarray(self.image.data),  # type: ignore
-            self.size.width,
-            self.size.height,
+            img_c.data,
+            w,
+            h,
             bytes_per_line,
             QtGui.QImage.Format.Format_BGR888,
-        )  # type: ignore
+        )
         return QtGui.QPixmap.fromImage(q_image)
 
     def crop(self, x: int, y: int, w: int, h: int):

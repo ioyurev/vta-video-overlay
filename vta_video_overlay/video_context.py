@@ -19,14 +19,7 @@ class VideoContext:
     @classmethod
     def open(cls, path: str | Path) -> "VideoContext":
         """Открывает видео и создает контекст."""
-        cap = cv2.VideoCapture(
-            str(path),
-            cv2.CAP_FFMPEG,
-            [cv2.CAP_PROP_HW_ACCELERATION, cv2.VIDEO_ACCELERATION_ANY],
-        )
-        if not cap.isOpened():
-            cap = cv2.VideoCapture(str(path))
-            
+        cap = cv2.VideoCapture(str(path))
         if not cap.isOpened():
             raise RuntimeError(f"Cannot open video: {path}")
         
