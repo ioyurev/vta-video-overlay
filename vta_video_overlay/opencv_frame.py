@@ -2,11 +2,20 @@ from typing import NamedTuple
 
 import cv2
 import numpy as np
+from loguru import logger as log
 from PySide6 import QtGui
 
+from vta_video_overlay.config import BG_ALPHA, BG_COLOR, FONT_FILENAME, TEXT_COLOR, config
 from vta_video_overlay.crop_selection_widgets import RectangleGeometry
 from vta_video_overlay.enums import Alignment
-from vta_video_overlay.pil_frame import Image, PILFrame
+
+try:
+    CV_FONT_MAIN = cv2.FontFace(FONT_FILENAME)
+    CV_FONT_SMALL = cv2.FontFace(FONT_FILENAME)
+except Exception as e:
+    log.warning(f"Failed to load {FONT_FILENAME}: {e}. Falling back to 'sans' font...")
+    CV_FONT_MAIN = cv2.FontFace("sans")
+    CV_FONT_SMALL = cv2.FontFace("sans")
 
 
 class Size(NamedTuple):
@@ -20,12 +29,13 @@ class CVFrame:
         self._update_size()
 
     @staticmethod
-    def from_pilframe(frame: PILFrame):
+    def from_pilframe(frame):
         return CVFrame(
             image=cv2.cvtColor(src=np.array(frame.image), code=cv2.COLOR_RGB2BGR)
         )
 
     def to_pilframe(self):
+        from vta_video_overlay.pil_frame import Image, PILFrame
         return PILFrame(image=Image.fromarray(self.image[:, :, ::-1]))
 
     def _update_size(self):
@@ -113,3 +123,72 @@ class CVFrame:
         self.image[y1:y2, x1:x2] = blended.astype(np.uint8)
 
         return self.image
+
+    def put_text(
+        self,
+        text: str,
+        xy: tuple[int, int],
+        align: Alignment,
+        color: tuple[int, int, int] = TEXT_COLOR,
+        bg_color: tuple[int, int, int] | None = BG_COLOR,
+        padding: int = 5,
+        small: bool = False,
+        weight: int = 400,
+    ) -> tuple[int, int, int, int]:
+        """
+        Отрисовывает текст и полупрозрачный фон с помощью OpenCV 5 FontFace.
+        Возвращает расширенный bbox фона: (left, top, right, bottom).
+        """
+        font = CV_FONT_SMALL if small else CV_FONT_MAIN
+        size = config.text.additional_size if small else config.text.main_size
+
+        if align == Alignment.TOP_LEFT:
+            flags = cv2.PUT_TEXT_ALIGN_LEFT | cv2.PUT_TEXT_ORIGIN_TL
+        elif align == Alignment.TOP_RIGHT:
+            flags = cv2.PUT_TEXT_ALIGN_RIGHT | cv2.PUT_TEXT_ORIGIN_TL
+        elif align == Alignment.BOTTOM_LEFT:
+            flags = cv2.PUT_TEXT_ALIGN_LEFT | cv2.PUT_TEXT_ORIGIN_BL
+        elif align == Alignment.BOTTOM_RIGHT:
+            flags = cv2.PUT_TEXT_ALIGN_RIGHT | cv2.PUT_TEXT_ORIGIN_BL
+        else:
+            flags = cv2.PUT_TEXT_ALIGN_LEFT | cv2.PUT_TEXT_ORIGIN_TL
+
+        # Вычисляем bounding box текста через OpenCV 5 API
+        rect = cv2.getTextSize(
+            (self.size.width, self.size.height),
+            text,
+            xy,
+            font,
+            size,
+            weight,
+            flags,
+        )
+        rx, ry, rw, rh = rect
+
+        pad = config.text.bg_padding
+        x1 = max(0, rx - pad)
+        y1 = max(0, ry - pad)
+        x2 = min(self.size.width, rx + rw + pad)
+        y2 = min(self.size.height, ry + rh + pad)
+
+        # Отрисовка полупрозрачной плашки фона
+        if bg_color is not None and x2 > x1 and y2 > y1:
+            roi = self.image[y1:y2, x1:x2]
+            bg_arr = np.array(bg_color, dtype=np.float32)
+            blended = (roi.astype(np.float32) * (1.0 - BG_ALPHA) + bg_arr * BG_ALPHA)
+            self.image[y1:y2, x1:x2] = blended.astype(np.uint8)
+
+        # Отрисовка текста поверх плашки
+        cv2.putText(
+            img=self.image,
+            text=text,
+            org=xy,
+            color=color,
+            fface=font,
+            size=size,
+            weight=weight,
+            flags=flags,
+        )
+
+        return (x1, y1, x2, y2)
+

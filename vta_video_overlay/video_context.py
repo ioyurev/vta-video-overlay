@@ -21,12 +21,17 @@ class VideoContext:
         if not cap.isOpened():
             raise RuntimeError(f"Cannot open video: {path}")
         
+        fps_val = cap.get(cv2.CAP_PROP_FPS)
+        total_frames_val = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        width_val = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height_val = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        
         return cls(
             cap=cap,
-            fps=cap.get(cv2.CAP_PROP_FPS) or 30.0,
-            total_frames=int(cap.get(cv2.CAP_PROP_FRAME_COUNT)),
-            width=int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
-            height=int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
+            fps=fps_val if fps_val > 0 else 30.0,
+            total_frames=max(0, total_frames_val),
+            width=max(0, width_val),
+            height=max(0, height_val),
         )
     
     def read_frame(self, index: int) -> np.ndarray | None:

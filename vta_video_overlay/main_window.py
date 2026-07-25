@@ -175,8 +175,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # Узнаем кол-во кадров синхронно (один раз для слайдера)
         cap = cv2.VideoCapture(video_path)
         if cap.isOpened():
-            self.preview_total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-            self.current_fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
+            total_frames_val = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+            fps_val = cap.get(cv2.CAP_PROP_FPS)
+            self.preview_total_frames = max(0, total_frames_val)
+            self.current_fps = fps_val if fps_val > 0 else 30.0
             self.slider.setRange(0, max(0, self.preview_total_frames - 1))
             self.slider.setValue(0)
             self.slider.setEnabled(True)

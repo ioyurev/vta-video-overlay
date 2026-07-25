@@ -60,17 +60,15 @@ def make_frame(
             align=Alignment.BOTTOM_RIGHT,
         )
     
-    pilframe = cvframe.to_pilframe()
-    
     # Отрисовка времени
-    bbox = pilframe.put_text(
+    bbox = cvframe.put_text(
         text=QtCore.QCoreApplication.tr("t(s): {time:.1f}").format(time=time),  # type: ignore
         xy=(config.text.margin_x, config.text.margin_y),
         align=Alignment.TOP_LEFT,
     )
     
     # Отрисовка EMF ниже времени
-    bbox = pilframe.put_text(
+    bbox = cvframe.put_text(
         text=QtCore.QCoreApplication.tr("E(mV): {emf:.2f}").format(emf=emf),  # type: ignore
         xy=(config.text.margin_x, config.text.line_spacing + bbox[3]),
         align=Alignment.TOP_LEFT,
@@ -79,7 +77,7 @@ def make_frame(
     # Отрисовка Температуры и Скорости
     if temp is not None:
         # Температура
-        bbox = pilframe.put_text(
+        bbox = cvframe.put_text(
             text=f"T(°C): {temp:.0f}",
             xy=(config.text.margin_x, config.text.line_spacing + bbox[3]),
             align=Alignment.TOP_LEFT,
@@ -87,14 +85,14 @@ def make_frame(
         
         # Скорость отображается ВСЕГДА (4-я строка)
         if temp_speed is not None:
-            bbox = pilframe.put_text(
+            bbox = cvframe.put_text(
                 text=QtCore.QCoreApplication.tr("dT/dt(°C/s): {speed:.2f}").format(speed=temp_speed), # type: ignore
                 xy=(config.text.margin_x, config.text.line_spacing + bbox[3]),
                 align=Alignment.TOP_LEFT,
             )
     
     if add_text is not None:
-        bbox = pilframe.put_text(
+        bbox = cvframe.put_text(
             text=add_text,
             xy=(config.text.margin_x, cvframe.size.height - config.text.margin_y),
             align=Alignment.BOTTOM_LEFT,
@@ -104,13 +102,12 @@ def make_frame(
     else:
         xy = (config.text.margin_x, cvframe.size.height - config.text.margin_y)
     
-    bbox = pilframe.put_text(
+    bbox = cvframe.put_text(
         text=operator_name, xy=xy, align=Alignment.BOTTOM_LEFT, small=True
     )
-    bbox = pilframe.put_text(
+    bbox = cvframe.put_text(
         text=sample_name,
         xy=(config.text.margin_x, bbox[1] - config.text.line_spacing),
         align=Alignment.BOTTOM_LEFT,
     )
-    cvframe = CVFrame.from_pilframe(frame=pilframe)
     return cvframe
