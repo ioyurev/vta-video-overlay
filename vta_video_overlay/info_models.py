@@ -5,6 +5,7 @@ import numpy as np
 
 from vta_video_overlay.crop_selection_widgets import RectangleGeometry
 from vta_video_overlay.data_file import Data
+from vta_video_overlay.enums import OverlapStatus
 
 
 @dataclass(slots=True)
@@ -37,15 +38,14 @@ class VideoInfo:
     path: Path
     input_width: int
     input_height: int
-    output_width: int
-    output_height: int
     fps_nominal: float
-    total_frames: int
-    duration_sec: float
-    timestamps_source: str
-    timestamps_available: bool
-    first_timestamp_sec: float | None
-    last_timestamp_sec: float | None
+    real_fps: float | None = None
+    total_frames: int = 0
+    duration_sec: float = 0.0
+    timestamps_source: str = ""
+    timestamps_available: bool = False
+    first_timestamp_sec: float | None = None
+    last_timestamp_sec: float | None = None
     crop_rect: RectangleGeometry | None = None
     codec_name: str | None = None
     pix_fmt: str | None = None
@@ -61,12 +61,20 @@ class VideoInfo:
     trimmed_start_frames: int = 0
     trimmed_end_frames: int = 0
 
+    @property
+    def output_width(self) -> int:
+        return self.crop_rect.w if self.crop_rect else self.input_width
+
+    @property
+    def output_height(self) -> int:
+        return self.crop_rect.h if self.crop_rect else self.input_height
+
 
 @dataclass(slots=True)
 class TimelineSelection:
     """Описание пересечения временных интервалов видео и данных."""
 
-    status: str  # "full" | "partial" | "none"
+    status: OverlapStatus
     overlap_start_sec: float
     overlap_end_sec: float
     overlap_duration_sec: float
@@ -95,7 +103,7 @@ class AlignedInfo:
     real_fps: float | None
     temp_smoothing_window: int
     speed_smoothing_window: int
-    overlap_status: str  # "full" | "partial" | "none"
+    overlap_status: OverlapStatus
     trimmed_start_frames: int
     trimmed_end_frames: int
     data_discarded_before_sec: float

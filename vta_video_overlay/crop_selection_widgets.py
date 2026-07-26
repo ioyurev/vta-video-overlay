@@ -21,6 +21,10 @@ from typing import NamedTuple
 from PySide6 import QtCore, QtGui, QtMultimedia, QtMultimediaWidgets, QtWidgets
 
 
+def ensure_even(value: int) -> int:
+    return value & ~1
+
+
 class RectangleGeometry(NamedTuple):
     x: int
     y: int
@@ -37,10 +41,10 @@ class RectangleGeometry(NamedTuple):
         h = max(min_dimension, min(max_height - y, self.h))
 
         # Ensure EVEN width and height for YUV420P / HEVC / H.264 codec compatibility
-        w = (min(w, max_width - x)) & ~1
-        h = (min(h, max_height - y)) & ~1
-        w = max(min_dimension, w) & ~1
-        h = max(min_dimension, h) & ~1
+        w = ensure_even(min(w, max_width - x))
+        h = ensure_even(min(h, max_height - y))
+        w = ensure_even(max(min_dimension, w))
+        h = ensure_even(max(min_dimension, h))
 
         return RectangleGeometry(x, y, w, h)
 

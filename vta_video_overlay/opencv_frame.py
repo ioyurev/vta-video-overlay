@@ -6,7 +6,7 @@ from loguru import logger as log
 from PySide6 import QtGui
 
 from vta_video_overlay.config import BG_ALPHA, BG_COLOR, FONT_FILENAME, TEXT_COLOR, config
-from vta_video_overlay.crop_selection_widgets import RectangleGeometry
+from vta_video_overlay.crop_selection_widgets import RectangleGeometry, ensure_even
 from vta_video_overlay.enums import Alignment
 
 try:
@@ -62,11 +62,11 @@ class CVFrame:
         # Validate crop parameters to prevent invalid operations
         h, w = self.image.shape[:2]
         # Ensure crop coordinates are within image bounds
-        x = (max(0, min(rect.x, w - 1))) & ~1
-        y = (max(0, min(rect.y, h - 1))) & ~1
+        x = ensure_even(max(0, min(rect.x, w - 1)))
+        y = ensure_even(max(0, min(rect.y, h - 1)))
         # Ensure crop dimensions are EVEN numbers for YUV420P / HEVC / H.264 / AMF compatibility
-        crop_w = (max(10, min(rect.w, w - x))) & ~1
-        crop_h = (max(10, min(rect.h, h - y))) & ~1
+        crop_w = ensure_even(max(10, min(rect.w, w - x)))
+        crop_h = ensure_even(max(10, min(rect.h, h - y)))
         self.crop(x, y, crop_w, crop_h)
 
     def put_img(

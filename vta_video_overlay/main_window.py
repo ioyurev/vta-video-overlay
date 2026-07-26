@@ -4,7 +4,6 @@ import time
 from dataclasses import replace
 from pathlib import Path
 
-import cv2
 from loguru import logger as log
 from PySide6 import QtCore, QtGui, QtWidgets
 
@@ -22,7 +21,10 @@ from vta_video_overlay.info_builders import (
     build_video_info,
     update_video_info_with_timeline,
 )
-from vta_video_overlay.info_models import AlignedInfo, LoadedMeasurement, VideoInfo
+from vta_video_overlay.info_models import (
+    SessionState,
+    VideoInfo,
+)
 from vta_video_overlay.overlay_settings_dialog import OverlaySettingsDialog
 from vta_video_overlay.aspect_ratio_label import AspectRatioLabel
 from vta_video_overlay.preview_worker import PreviewWorker
@@ -34,15 +36,16 @@ from vta_video_overlay.ui.MainWindow import Ui_MainWindow
 def open_file_explorer(path: Path):
     system = platform.system()
     if system == "Windows":
-        subprocess.Popen(["explorer", path], shell=True)
+        subprocess.Popen(["explorer", str(path)])
     elif system == "Linux":
-        subprocess.Popen(["xdg-open", path])
+        subprocess.Popen(["xdg-open", str(path)])
     else:
         print("Unsupported operating system")
 
 
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     video_preview: AspectRatioLabel
+    session: SessionState
 
     # Сигналы для общения с воркером
     worker_data_signal = QtCore.Signal(object, object, object)  # data, crop_rect, timeline
@@ -80,6 +83,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.render_start_time: float | None = None
         self.current_render_fps: float = 0.0
+
+        self.controller.pipeline.stage_progress.connect(self.update_progressbar)
+        self.controller.pipeline.stage_finished.connect(self.stage_finished)
+        self.controller.pipeline.fps_updated.connect(self.update_fps)
+        self.controller.pipeline.work_finished.connect(self.finished)
 
         self.about_window = AboutWindow(parent=self)
 
@@ -126,9 +134,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.menuOptions.addAction(self.actionOverlaySettings)
 
         # --- СОСТОЯНИЕ СВЕДЕНИЙ СЕССИИ ---
-        self.loaded_measurement: LoadedMeasurement | None = None
-        self.video_info: VideoInfo | None = None
-        self.aligned_info: AlignedInfo | None = None
+        self.session = SessionState()
 
         # --- НАСТРОЙКА UI ПРЕДПРОСМОТРА ---
 
@@ -225,13 +231,36 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.current_fps: float = 30.0
         self.preview_total_frames: int = 0
 
-    def start_preview_worker(self, video_path):
+    def _warn(self, text: str) -> None:
+        QtWidgets.QMessageBox.warning(self, self.tr("Warning"), text)
+
+    def start_preview_worker(self, video_path: str, video_info: VideoInfo | None = None):
         """Запускает поток предпросмотра."""
-        if self.preview_thread:
+        if self.worker is not None:
+            try:
+                self.worker_data_signal.disconnect(self.worker.update_data)
+            except (RuntimeError, TypeError):
+                pass
+            try:
+                self.worker_request_signal.disconnect(self.worker.request_frame)
+            except (RuntimeError, TypeError):
+                pass
+            try:
+                self.worker.frame_ready.disconnect(self.handle_frame_ready)
+            except (RuntimeError, TypeError):
+                pass
+
+        if self.preview_thread is not None:
             self.preview_thread.quit()
             self.preview_thread.wait()
+            self.preview_thread.deleteLater()
+            self.preview_thread = None
 
-        self.preview_thread = QtCore.QThread()
+        if self.worker is not None:
+            self.worker.deleteLater()
+            self.worker = None
+
+        self.preview_thread = QtCore.QThread(self)
         self.worker = PreviewWorker(video_path)
         self.worker.moveToThread(self.preview_thread)
 
@@ -242,15 +271,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.preview_thread.start()
 
-        cap = cv2.VideoCapture(video_path)
-        if cap.isOpened():
-            total_frames_val = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-            fps_val = cap.get(cv2.CAP_PROP_FPS)
-            self.preview_total_frames = max(0, total_frames_val)
-            self.current_fps = fps_val if fps_val > 0 else 30.0
-            self.slider.setValue(0)
-            cap.release()
+        if video_info is not None:
+            self.preview_total_frames = max(0, video_info.total_frames)
+            self.current_fps = video_info.fps_nominal if video_info.fps_nominal > 0 else 30.0
 
+        self.slider.setValue(0)
         self._refresh_slider_range()
         self.update_worker_data()
         self.request_preview_update(0)
@@ -304,10 +329,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def overlay(self):
         timeline = self.controller.pipeline.timeline
         if timeline is None or timeline.status == "none":
-            QtWidgets.QMessageBox.warning(
-                self,
-                self.tr("Warning"),
-                self.tr("No temporal overlap between video and data. Export is not possible."),
+            self._warn(
+                self.tr("No temporal overlap between video and data. Export is not possible.")
             )
             return
 
@@ -318,14 +341,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.fps_label.show()
         self.eta_label.show()
         self.eta_label.setText("Elapsed: 00:00 | ETA: --:--")
-        self.controller.pipeline.stage_progress.connect(self.update_progressbar)
-        self.controller.pipeline.stage_finished.connect(self.stage_finished)
-        self.controller.pipeline.fps_updated.connect(self.update_fps)
-        try:
-            self.controller.pipeline.work_finished.disconnect()
-        except (RuntimeError, TypeError) as e:
-            log.debug(f"Signal work_finished not connected before disconnect: {e}")
-        self.controller.pipeline.work_finished.connect(self.finished)
         log.info(self.tr("Started video processing"))
         self.controller.overlay(convert_excel=convert_excel)
 
@@ -344,25 +359,27 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def _refresh_timeline_and_aligned(self) -> None:
         """Пересчитывает timeline selection и aligned info."""
-        if self.loaded_measurement is None or self.video_info is None:
-            self.controller.pipeline.timeline = None
-            self.aligned_info = None
+        if self.session.measurement is None or self.session.video_info is None:
+            self.session.timeline = None
+            self.session.aligned_info = None
             self.btn_convert.setEnabled(False)
             return
 
         timeline = build_timeline_selection(
-            data=self.loaded_measurement.data,
-            video_info=self.video_info,
+            data=self.session.measurement.data,
+            video_info=self.session.video_info,
         )
-        self.controller.pipeline.timeline = timeline
-
-        self.video_info = update_video_info_with_timeline(self.video_info, timeline)
-
-        self.aligned_info = build_aligned_info(
-            data=self.loaded_measurement.data,
-            video_info=self.video_info,
+        self.session.timeline = timeline
+        self.session.video_info = update_video_info_with_timeline(
+            self.session.video_info,
+            timeline,
+        )
+        self.session.aligned_info = build_aligned_info(
+            data=self.session.measurement.data,
+            video_info=self.session.video_info,
             timeline=timeline,
         )
+        self.controller.pipeline.timeline = self.session.timeline
 
         has_valid_overlap = timeline.status != "none"
         self.btn_convert.setEnabled(has_valid_overlap)
@@ -371,26 +388,21 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def _refresh_info_panel(self) -> None:
         self.session_info.set_measurement_info(
-            self.loaded_measurement.info if self.loaded_measurement else None
+            self.session.measurement.info if self.session.measurement else None
         )
-        self.session_info.set_video_info(self.video_info)
-        self.session_info.set_aligned_info(self.aligned_info)
+        self.session_info.set_video_info(self.session.video_info)
+        self.session_info.set_aligned_info(self.session.aligned_info)
 
     @QtCore.Slot()
     def reset_crop(self):
         """Сбрасывает кроп к оригинальному разрешению видео."""
         self.controller.pipeline.crop_rect = None
 
-        if self.video_info is not None:
-            self.video_info = replace(
-                self.video_info,
-                crop_rect=None,
-                output_width=self.video_info.input_width,
-                output_height=self.video_info.input_height,
-            )
+        if self.session.video_info is not None:
+            self.session.video_info = replace(self.session.video_info, crop_rect=None)
             self.video_preview.set_aspect_ratio(
-                self.video_info.input_width,
-                self.video_info.input_height,
+                self.session.video_info.input_width,
+                self.session.video_info.input_height,
             )
             self._refresh_timeline_and_aligned()
             self._refresh_info_panel()
@@ -407,7 +419,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         video_path = self.controller.pipeline.video_path_input
         if video_path and Path(video_path).is_file():
             try:
-                vw, vh = FFmpeg().get_resolution(Path(video_path))
+                ff = FFmpeg()
+                vw, vh = ff.get_resolution(Path(video_path))
                 rect = rect.safe_bound(vw, vh)
             except Exception as e:
                 log.warning(f"Could not get resolution for crop bounding: {e}")
@@ -415,25 +428,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if rect and rect.h > 0:
             self.video_preview.set_aspect_ratio(rect.w, rect.h)
 
-        if self.video_info is not None:
+        if self.session.video_info is not None:
             if rect is None:
-                self.video_info = replace(
-                    self.video_info,
-                    crop_rect=None,
-                    output_width=self.video_info.input_width,
-                    output_height=self.video_info.input_height,
-                )
+                self.session.video_info = replace(self.session.video_info, crop_rect=None)
                 self.video_preview.set_aspect_ratio(
-                    self.video_info.input_width,
-                    self.video_info.input_height,
+                    self.session.video_info.input_width,
+                    self.session.video_info.input_height,
                 )
             else:
-                self.video_info = replace(
-                    self.video_info,
-                    crop_rect=rect,
-                    output_width=rect.w,
-                    output_height=rect.h,
-                )
+                self.session.video_info = replace(self.session.video_info, crop_rect=rect)
             self._refresh_info_panel()
 
         self.reset_crop_action.setEnabled(True)
@@ -446,7 +449,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         loaded = self.controller.pick_file()
         if loaded is not None:
             QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.CursorShape.WaitCursor)
-            self.loaded_measurement = loaded
+            self.session.measurement = loaded
             data = loaded.data
 
             log.info(self.tr("Selected data file: {path}").format(path=data.path))
@@ -480,12 +483,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if size[1] > 0:
             self.video_preview.set_aspect_ratio(size[0], size[1])
 
-        self.start_preview_worker(path)
-
-        self.video_info = build_video_info(
+        self.session.video_info = build_video_info(
             video_path=video_path,
             crop_rect=self.controller.pipeline.crop_rect,
         )
+
+        self.start_preview_worker(path, self.session.video_info)
         self._refresh_timeline_and_aligned()
         self._refresh_info_panel()
         QtWidgets.QApplication.restoreOverrideCursor()
@@ -528,25 +531,27 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.eta_label.hide()
         self.progressbar.setFormat("%p%")
         if tpl.is_success:
-            QtWidgets.QMessageBox.information(
-                self, "VTA video overlay", self.tr("Video processing completed")
-            )
             self._show_notification(
                 self.tr("Video processing completed"),
                 self.tr("Export finished successfully."),
             )
+            QtWidgets.QApplication.processEvents()
+            QtWidgets.QMessageBox.information(
+                self, "VTA video overlay", self.tr("Video processing completed")
+            )
         else:
             log.error(tpl.traceback_msg)
+            self._show_notification(
+                self.tr("Video processing failed"),
+                self.tr("An error occurred during export."),
+            )
+            QtWidgets.QApplication.processEvents()
             QtWidgets.QMessageBox.critical(
                 self,
                 self.tr("Error"),
                 self.tr(
                     "Video processing failed.\nException occurred.\n\n{msg}"
                 ).format(msg=tpl.traceback_msg),
-            )
-            self._show_notification(
-                self.tr("Video processing failed"),
-                self.tr("An error occurred during export."),
             )
         TempDirManager.cleanup()
         self.set_stuff_enabled(True)
@@ -616,11 +621,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def show_graph_preview(self):
         data = self.controller.pipeline.data
         if data is None:
-            QtWidgets.QMessageBox.warning(self, self.tr("Warning"), self.tr("Please load data first."))
+            self._warn(self.tr("Please load data first."))
             return
 
         if data.speed is None:
-            QtWidgets.QMessageBox.warning(self, self.tr("Warning"), self.tr("No speed data available."))
+            self._warn(self.tr("No speed data available."))
             return
 
         dlg = GraphPreviewDialog(data.time, data.speed, parent=self)

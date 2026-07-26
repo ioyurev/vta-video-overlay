@@ -60,6 +60,13 @@ class FrameRenderer:
         if self.graph_renderer and config.graph.enabled:
             graph_img = self.graph_renderer.get_frame_overlay(frame_index)
 
+        from vta_video_overlay.overlay_labels import build_overlay_labels
+
+        operator_name, sample_name = build_overlay_labels(
+            self.data.operator,
+            self.data.sample,
+        )
+
         return make_frame(
             img=img,
             crop_rect=self.crop_rect,
@@ -68,8 +75,8 @@ class FrameRenderer:
             temp=temp,
             temp_speed=speed,
             graph_img=graph_img,
-            operator_name=f"Operator: {self.data.operator}",
-            sample_name=f"Sample: {self.data.sample}",
+            operator_name=operator_name,
+            sample_name=sample_name,
             add_text=config.additional_text if config.additional_text_enabled else None,
         )
 

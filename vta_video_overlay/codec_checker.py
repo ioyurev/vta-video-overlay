@@ -3,6 +3,9 @@ from functools import lru_cache
 from loguru import logger as log
 
 
+from vta_video_overlay.ffmpeg_utils import build_codec_args
+
+
 @lru_cache(maxsize=32)
 def is_codec_working(codec_name: str) -> bool:
     """Проверяет реальную способность FFmpeg кодировать сырой видеопоток этим кодеком."""
@@ -25,15 +28,7 @@ def is_codec_working(codec_name: str) -> bool:
             "-c:v",
             codec_name,
         ]
-        if codec_name in ("h264_amf", "hevc_amf"):
-            cmd.extend(["-rc", "cqp", "-qp", "23"])
-        elif codec_name in ("h264_nvenc", "hevc_nvenc"):
-            cmd.extend(["-rc", "constqp", "-qp", "23"])
-        elif codec_name in ("h264_qsv", "hevc_qsv"):
-            cmd.extend(["-global_quality", "23"])
-        elif codec_name in ("libx264", "libx265"):
-            cmd.extend(["-crf", "23"])
-
+        cmd.extend(build_codec_args(codec_name, 23, "medium"))
         cmd.extend(["-pix_fmt", "yuv420p", "-f", "null", "-"])
 
         p = subprocess.Popen(

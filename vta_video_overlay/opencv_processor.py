@@ -8,13 +8,15 @@ from loguru import logger as log
 from PySide6 import QtCore
 
 from vta_video_overlay.config import config
-from vta_video_overlay.crop_selection_widgets import RectangleGeometry
+from vta_video_overlay.crop_selection_widgets import RectangleGeometry, ensure_even
 from vta_video_overlay.data_collections import ProcessProgress
+from vta_video_overlay.data_file import Data
+from vta_video_overlay.ffmpeg_utils import build_codec_args
 from vta_video_overlay.frame_renderer import FrameRenderer
 from vta_video_overlay.info_models import TimelineSelection
 from vta_video_overlay.opencv_frame import CVFrame
 from vta_video_overlay.video_context import VideoContext
-from vta_video_overlay.video_data import VideoData
+from vta_video_overlay.video_timing import compute_real_fps
 
 
 class CVProcessor(QtCore.QObject):
@@ -23,18 +25,18 @@ class CVProcessor(QtCore.QObject):
 
     def __init__(
         self,
-        video_data: VideoData,
+        video_path: Path,
+        data: Data,
         path_output: Path,
         timeline: TimelineSelection,
         crop_rect: RectangleGeometry | None = None,
-        graph_enabled: bool = True,
     ):
         super().__init__()
-        self.video_data = video_data
+        self.video_path = video_path
+        self.data = data
         self.path_output = path_output
         self.timeline = timeline
         self.crop_rect = crop_rect
-        self.graph_enabled = graph_enabled
         self.is_interrupted = False
 
     def stop(self):
@@ -43,30 +45,27 @@ class CVProcessor(QtCore.QObject):
 
     def run(self):
         # Открываем видео
-        video_ctx = VideoContext.open(self.video_data.path)
+        video_ctx = VideoContext.open(self.video_path)
 
         # Создаем рендерер
         renderer = FrameRenderer(
             video_ctx=video_ctx,
-            data=self.video_data.data,
+            data=self.data,
             timestamps=self.timeline.kept_timestamps_sec,
             crop_rect=self.crop_rect,
-            graph_enabled=self.graph_enabled,
+            graph_enabled=config.graph.enabled,
         )
 
         # Размер после кропа (гарантируем ЧЕТНЫЕ ширину и высоту для YUV420P / HEVC / AMF)
         if self.crop_rect:
-            size = (self.crop_rect.w & ~1, self.crop_rect.h & ~1)
+            size = (ensure_even(self.crop_rect.w), ensure_even(self.crop_rect.h))
         else:
-            size = (video_ctx.width & ~1, video_ctx.height & ~1)
+            size = (ensure_even(video_ctx.width), ensure_even(video_ctx.height))
 
         # Для VFR-видео (переменная экспозиция камеры) CAP_PROP_FPS возвращает
         # номинальный FPS, а не реальный. Вычисляем средний FPS из timestamps.
         ts = self.timeline.kept_timestamps_sec
-        if len(ts) > 1 and (ts[-1] - ts[0]) > 0:
-            real_fps = (len(ts) - 1) / (ts[-1] - ts[0])
-        else:
-            real_fps = video_ctx.fps
+        real_fps = compute_real_fps(ts) or video_ctx.fps
 
         # Подготавливаем команду FFmpeg для прямого кодирования из stdin
         cmd = [
@@ -88,47 +87,15 @@ class CVProcessor(QtCore.QObject):
             "-",
             "-c:v",
             config.video_encoding.codec,
-        ]
-
-        codec = config.video_encoding.codec
-        crf = config.video_encoding.crf
-        preset = config.video_encoding.preset
-
-        if codec == "libx265":
-            if crf == 0:
-                cmd.extend(["-x265-params", "lossless=1"])
-            else:
-                cmd.extend(["-crf", str(crf), "-preset", preset])
-        elif codec == "libx264":
-            cmd.extend(["-crf", str(crf), "-preset", preset])
-        elif codec in ("h264_amf", "hevc_amf"):
-            cmd.extend([
-                "-usage",
-                "transcoding",
-                "-quality",
-                "speed",
-                "-rc",
-                "cqp",
-                "-qp",
-                str(crf),
-            ])
-        elif codec in ("h264_nvenc", "hevc_nvenc"):
-            cmd.extend([
-                "-rc",
-                "constqp",
-                "-qp",
-                str(crf),
-            ])
-        elif codec in ("h264_qsv", "hevc_qsv"):
-            cmd.extend(["-global_quality", str(crf)])
-        elif codec == "mpeg4":
-            cmd.extend(["-q:v", str(crf if crf > 0 else 1)])
-
-        cmd.extend([
+            *build_codec_args(
+                config.video_encoding.codec,
+                config.video_encoding.crf,
+                config.video_encoding.preset,
+            ),
             "-pix_fmt",
             config.video_encoding.pix_fmt,
             str(self.path_output),
-        ])
+        ]
 
         log.info(
             f"Starting direct FFmpeg pipe encoding ({config.video_encoding.codec}, CRF={config.video_encoding.crf}, threads={config.video_encoding.render_threads})..."

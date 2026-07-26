@@ -7,9 +7,9 @@ from PySide6 import QtCore
 from vta_video_overlay.crop_selection_widgets import RectangleGeometry
 from vta_video_overlay.data_collections import ProcessProgress, ProcessResult
 from vta_video_overlay.data_file import Data
+from vta_video_overlay.enums import OverlapStatus
 from vta_video_overlay.info_models import TimelineSelection
 from vta_video_overlay.opencv_processor import CVProcessor
-from vta_video_overlay.video_data import VideoData
 
 
 class Pipeline(QtCore.QThread):
@@ -24,7 +24,6 @@ class Pipeline(QtCore.QThread):
         self.video_path_input: Path | None = None
         self.video_path_output: Path | None = None
         self.crop_rect: RectangleGeometry | None = None
-        self.graph_enabled: bool = True
         self.cv_agent: CVProcessor | None = None
         self.timeline: TimelineSelection | None = None
 
@@ -48,18 +47,17 @@ class Pipeline(QtCore.QThread):
     def execute(self):
         if self.video_path_input is None or self.video_path_output is None or self.data is None:
             raise ValueError("Pipeline inputs (video_path_input, video_path_output, data) must be specified.")
-        if self.timeline is None or self.timeline.status == "none":
+        if self.timeline is None or self.timeline.status is OverlapStatus.NONE:
             raise ValueError("No temporal overlap between video and measurement data. Export impossible.")
 
-        video_data = VideoData(video_path=self.video_path_input, data=self.data)
         self.stage_finished.emit((self.timeline.kept_frames - 1, "1/1", "frame"))
 
         self.cv_agent = CVProcessor(
-            video_data=video_data,
+            video_path=self.video_path_input,
+            data=self.data,
             path_output=self.video_path_output,
             timeline=self.timeline,
             crop_rect=self.crop_rect,
-            graph_enabled=self.graph_enabled,
         )
         self.cv_agent.progress_signal.connect(self.stage_progress.emit)
         self.cv_agent.fps_signal.connect(self.fps_updated.emit)

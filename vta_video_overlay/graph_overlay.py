@@ -4,8 +4,11 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg
 import numpy as np
 
 from vta_video_overlay.config import (
-    BG_COLOR_MPL, TEXT_COLOR, BG_ALPHA, 
-    config, setup_mpl_style, style_graph_axes
+    TEXT_COLOR,
+    apply_mpl_figure_style,
+    config,
+    setup_mpl_style,
+    style_graph_axes,
 )
 
 
@@ -42,14 +45,10 @@ class GraphOverlay:
         self.fig = Figure(
             figsize=(width / self.dpi, height / self.dpi),
             dpi=self.dpi,
-            facecolor=BG_COLOR_MPL
         )
         
         self.ax = self.fig.add_subplot(111)
-        
-        self.fig.patch.set_alpha(BG_ALPHA)
-        self.ax.set_facecolor(BG_COLOR_MPL)
-        self.ax.patch.set_alpha(0.0)
+        apply_mpl_figure_style(self.fig, self.ax)
         
         style_graph_axes(self.ax, label_pt)
         

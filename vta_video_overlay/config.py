@@ -162,14 +162,14 @@ class Config(BaseModel):
         log.info(f"Migrating legacy config from {ini_path}")
         parser = configparser.ConfigParser()
         parser.read(ini_path, encoding="utf-8")
-        
+
         data: dict[str, Any] = {}
         graph_data: dict[str, Any] = {}
         text_data: dict[str, Any] = {}
 
         if "Overlay" in parser:
             overlay = parser["Overlay"]
-            
+
             if "logo_enabled" in overlay:
                 data["logo_enabled"] = overlay.getboolean("logo_enabled")
             if "additional_text_enabled" in overlay:
@@ -178,16 +178,47 @@ class Config(BaseModel):
                 data["additional_text"] = overlay["additional_text"]
             if "language" in overlay:
                 data["language"] = overlay["language"]
-            
+
             if "main_text_size" in overlay:
                 text_data["main_size"] = overlay.getint("main_text_size")
             if "additional_text_size" in overlay:
                 text_data["additional_size"] = overlay.getint("additional_text_size")
+            if "show_time" in overlay:
+                text_data["show_time"] = overlay.getboolean("show_time")
+            if "show_emf" in overlay:
+                text_data["show_emf"] = overlay.getboolean("show_emf")
+            if "show_temp" in overlay:
+                text_data["show_temp"] = overlay.getboolean("show_temp")
+            if "show_speed" in overlay:
+                text_data["show_speed"] = overlay.getboolean("show_speed")
+
+        if "Graph" in parser:
+            graph = parser["Graph"]
+            if "enabled" in graph:
+                graph_data["enabled"] = graph.getboolean("enabled")
+            if "time_window" in graph:
+                graph_data["time_window"] = graph.getfloat("time_window")
+            if "line_width" in graph:
+                graph_data["line_width"] = graph.getfloat("line_width")
+
+        video_data: dict[str, Any] = {}
+        if "VideoEncoding" in parser:
+            enc = parser["VideoEncoding"]
+            if "codec" in enc:
+                video_data["codec"] = enc["codec"]
+            if "crf" in enc:
+                video_data["crf"] = enc.getint("crf")
+            if "preset" in enc:
+                video_data["preset"] = enc["preset"]
+            if "render_threads" in enc:
+                video_data["render_threads"] = enc.getint("render_threads")
 
         if graph_data:
             data["graph"] = GraphSettings(**graph_data)
         if text_data:
             data["text"] = TextSettings(**text_data)
+        if video_data:
+            data["video_encoding"] = VideoEncodingSettings(**video_data)
 
         return cls(**data)
 
@@ -227,9 +258,7 @@ class Config(BaseModel):
 
         # Создание дефолтного конфига
         log.warning("Creating new default config.")
-        cfg = cls()
-        cfg.update()
-        return cfg
+        return cls()
 
     def update(self) -> None:
         """Сохраняет текущую конфигурацию в файл."""
@@ -250,10 +279,17 @@ def setup_mpl_fonts() -> None:
 
 def style_graph_axes(ax: Axes, label_fontsize: float) -> None:
     """Применяет стандартный стиль к осям графика."""
-    ax.tick_params(colors=TEXT_COLOR_MPL, labelsize=label_fontsize, direction='in')
+    ax.tick_params(colors=TEXT_COLOR_MPL, labelsize=label_fontsize, direction="in")
     for spine in ax.spines.values():
         spine.set_color(TEXT_COLOR_MPL)
         spine.set_linewidth(1)
+
+
+def apply_mpl_figure_style(fig: Any, ax: Any) -> None:
+    fig.patch.set_facecolor(BG_COLOR_MPL)
+    fig.patch.set_alpha(BG_ALPHA)
+    ax.set_facecolor(BG_COLOR_MPL)
+    ax.patch.set_alpha(0.0)
 
 
 def setup_mpl_style(text_size: int | None = None) -> tuple[float, float]:

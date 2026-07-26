@@ -33,6 +33,7 @@ from PySide6 import QtWidgets
 from vta_video_overlay.data_file import Data
 from vta_video_overlay.file_widget_base import FileDataWidgetBase
 from vta_video_overlay.info_models import MeasurementInfo
+from vta_video_overlay.measurement_helpers import build_data, compute_ranges
 from vta_video_overlay.tda_headers import Headers
 
 
@@ -116,30 +117,17 @@ class TDAFile(BaseModel):
         )
 
     def to_data(self) -> Data:
-        data = Data()
-        data.path = self.path
-        data.sample = self.sample
-        data.operator = self.operator
-        data.time = self.time
-        data.emf = self.emf
-        data.temp = self.temp
-        return data
+        return build_data(
+            path=self.path,
+            operator=self.operator,
+            sample=self.sample,
+            time=self.time,
+            emf=self.emf,
+            temp=self.temp,
+        )
 
     def to_info(self) -> MeasurementInfo:
-        t_min = float(self.time[0]) if len(self.time) else 0.0
-        t_max = float(self.time[-1]) if len(self.time) else 0.0
-        emf_min = float(self.emf.min()) if len(self.emf) else None
-        emf_max = float(self.emf.max()) if len(self.emf) else None
-        temp_min = (
-            float(self.temp.min())
-            if self.temp is not None and len(self.temp)
-            else None
-        )
-        temp_max = (
-            float(self.temp.max())
-            if self.temp is not None and len(self.temp)
-            else None
-        )
+        stats = compute_ranges(self.time, self.emf, self.temp)
 
         return MeasurementInfo(
             source_format="TDA",
@@ -148,14 +136,14 @@ class TDAFile(BaseModel):
             sample=self.sample,
             operator=self.operator,
             points=len(self.time),
-            t_min_sec=t_min,
-            t_max_sec=t_max,
-            duration_sec=t_max - t_min,
-            emf_min=emf_min,
-            emf_max=emf_max,
+            t_min_sec=stats["t_min"],
+            t_max_sec=stats["t_max"],
+            duration_sec=stats["t_max"] - stats["t_min"],
+            emf_min=stats["emf_min"],
+            emf_max=stats["emf_max"],
             temp_available=self.temp is not None,
-            temp_min=temp_min,
-            temp_max=temp_max,
+            temp_min=stats["temp_min"],
+            temp_max=stats["temp_max"],
             calibration_available=self.temp is not None and bool(self.coeff),
             calibration_type="polynomial" if self.coeff else None,
             calibration_semantics="EMF → T",

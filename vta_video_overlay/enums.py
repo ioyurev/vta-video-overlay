@@ -7,3 +7,9 @@ class Alignment(Enum):
     BOTTOM_LEFT = auto()
     BOTTOM_RIGHT = auto()
     CENTER = auto()
+
+
+class OverlapStatus(str, Enum):
+    FULL = "full"
+    PARTIAL = "partial"
+    NONE = "none"

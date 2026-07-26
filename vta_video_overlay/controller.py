@@ -38,8 +38,11 @@ def pick_path_open(filter="All files(*.*)"):
 
 
 class Controller(QtCore.QObject):
-    pipeline = Pipeline()
     crop_done = QtCore.Signal(RectangleGeometry)
+
+    def __init__(self, parent: QtCore.QObject | None = None):
+        super().__init__(parent)
+        self.pipeline = Pipeline(self)
 
     @QtCore.Slot()
     def crop(self):

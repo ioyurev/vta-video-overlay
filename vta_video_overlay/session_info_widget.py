@@ -1,5 +1,6 @@
 from PySide6 import QtCore, QtWidgets
 
+from vta_video_overlay.enums import OverlapStatus
 from vta_video_overlay.info_models import AlignedInfo, MeasurementInfo, VideoInfo
 
 
@@ -109,12 +110,15 @@ class SessionInfoWidget(QtWidgets.QWidget):
             if info.crop_rect else "—"
         )
 
+        real_fps_str = "—" if info.real_fps is None else f"{info.real_fps:.3f}"
+
         rows = [
             (self.tr("Path"), str(info.path)),
             (self.tr("Input size"), f"{info.input_width} × {info.input_height}"),
             (self.tr("Output size"), f"{info.output_width} × {info.output_height}"),
             (self.tr("Crop rect"), crop_text),
             (self.tr("Nominal FPS"), f"{info.fps_nominal:.3f}"),
+            (self.tr("Real FPS (VFR)"), real_fps_str),
             (self.tr("Total frames"), str(info.total_frames)),
             (self.tr("Total duration (s)"), f"{info.duration_sec:.3f}"),
             (self.tr("Timestamps"), self.tr("Yes") if info.timestamps_available else self.tr("No")),
@@ -149,11 +153,11 @@ class SessionInfoWidget(QtWidgets.QWidget):
             return
 
         # --- Warnings ---
-        if info.overlap_status == "none":
+        if info.overlap_status is OverlapStatus.NONE:
             self.panel_aligned.set_warning(
                 info.error_message or self.tr("No temporal overlap!")
             )
-        elif info.overlap_status == "partial":
+        elif info.overlap_status is OverlapStatus.PARTIAL:
             parts: list[str] = []
             if info.video_trimmed_at_start:
                 parts.append(

@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 
 from vta_video_overlay.config import config
+from vta_video_overlay.overlay_labels import build_overlay_labels
 
 if TYPE_CHECKING:
     from vta_video_overlay.data_file import Data
@@ -71,15 +72,22 @@ class AlignedData:
         speed = self.speed[idx] if self.speed is not None else None
         return float(self.emf[idx]), temp, speed
     
-    def get_frame_context(self, idx: int, operator: str, sample: str) -> dict:
+    def get_frame_context(
+        self,
+        idx: int,
+        operator: str,
+        sample: str,
+        add_text: str | None,
+    ) -> dict:
         """Возвращает kwargs для make_frame."""
         emf, temp, speed = self.at_index(idx)
+        operator_name, sample_name = build_overlay_labels(operator, sample)
         return {
             "time": float(self.timestamps[idx]),
             "emf": emf,
             "temp": temp,
             "temp_speed": speed,
-            "operator_name": f"Operator: {operator}",
-            "sample_name": f"Sample: {sample}",
-            "add_text": config.additional_text if config.additional_text_enabled else None,
+            "operator_name": operator_name,
+            "sample_name": sample_name,
+            "add_text": add_text,
         }

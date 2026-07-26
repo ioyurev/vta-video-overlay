@@ -45,6 +45,30 @@ from PySide6 import QtCore
 from vta_video_overlay.data_collections import ProcessProgress
 
 
+def build_codec_args(codec: str, crf: int, preset: str) -> list[str]:
+    if codec == "libx265":
+        if crf == 0:
+            return ["-x265-params", "lossless=1"]
+        return ["-crf", str(crf), "-preset", preset]
+
+    if codec == "libx264":
+        return ["-crf", str(crf), "-preset", preset]
+
+    if codec in ("h264_amf", "hevc_amf"):
+        return ["-usage", "transcoding", "-quality", "speed", "-rc", "cqp", "-qp", str(crf)]
+
+    if codec in ("h264_nvenc", "hevc_nvenc"):
+        return ["-rc", "constqp", "-qp", str(crf)]
+
+    if codec in ("h264_qsv", "hevc_qsv"):
+        return ["-global_quality", str(crf)]
+
+    if codec == "mpeg4":
+        return ["-q:v", str(crf if crf > 0 else 1)]
+
+    return []
+
+
 def get_pts(packets: list[dict]) -> List[int]:
     pts: List[int] = []
 
@@ -62,18 +86,15 @@ def get_pts(packets: list[dict]) -> List[int]:
 
 
 class FFmpeg(QtCore.QObject):
-    def get_resolution(self, video_path: Path | str) -> tuple[int, int]:
-        probe = ffmpeg.probe(video_path)
-        video_stream = next(
-            (stream for stream in probe["streams"] if stream["codec_type"] == "video"),
-            None,
+    def get_video_stream_info(self, video_path: Path | str) -> dict:
+        probe = ffmpeg.probe(str(video_path))
+        return next(
+            stream for stream in probe["streams"] if stream["codec_type"] == "video"
         )
-        if video_stream is not None:
-            width = video_stream["width"]
-            height = video_stream["height"]
-            return (width, height)
-        else:
-            raise Exception(self.tr("Video stream not found."))
+
+    def get_resolution(self, video_path: Path | str) -> tuple[int, int]:
+        video_stream = self.get_video_stream_info(video_path)
+        return int(video_stream["width"]), int(video_stream["height"])
 
     def get_timestamps(self, video_path: Path, index: int = 0) -> List[int]:
         """
