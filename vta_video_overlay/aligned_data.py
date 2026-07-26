@@ -52,6 +52,8 @@ class AlignedData:
     @classmethod
     def from_data(cls, timestamps: np.ndarray, data: "Data") -> "AlignedData":
         """Создает выровненные данные из Data."""
+        # Для расчёта производной используем время, нормализованное к 0,
+        # чтобы dT/dt не зависела от абсолютного смещения временной оси.
         normalized_timestamps = (
             timestamps - timestamps[0] if len(timestamps) > 0 else timestamps
         )

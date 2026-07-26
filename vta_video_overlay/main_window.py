@@ -15,6 +15,7 @@ from vta_video_overlay.crop_selection_widgets import RectangleGeometry
 from vta_video_overlay.data_collections import ProcessProgress, ProcessResult
 from vta_video_overlay.ffmpeg_utils import FFmpeg
 from vta_video_overlay.graph_preview_dialog import GraphPreviewDialog
+from vta_video_overlay.enums import OverlapStatus
 from vta_video_overlay.info_builders import (
     build_aligned_info,
     build_timeline_selection,
@@ -311,7 +312,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def handle_slider_moved(self, val):
         """Показывает absolute source time для kept-позиции."""
         timeline = self.controller.pipeline.timeline
-        if timeline is not None and timeline.status != "none":
+        if timeline is not None and timeline.status is not OverlapStatus.NONE:
             if val < len(timeline.kept_timestamps_sec):
                 t = float(timeline.kept_timestamps_sec[val])
                 self.lbl_time.setText(f"{t:.1f}s")
@@ -328,7 +329,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def overlay(self):
         timeline = self.controller.pipeline.timeline
-        if timeline is None or timeline.status == "none":
+        if timeline is None or timeline.status is OverlapStatus.NONE:
             self._warn(
                 self.tr("No temporal overlap between video and data. Export is not possible.")
             )
@@ -347,7 +348,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def _refresh_slider_range(self):
         """Обновляет диапазон слайдера на основе timeline selection."""
         timeline = self.controller.pipeline.timeline
-        if timeline is not None and timeline.status != "none":
+        if timeline is not None and timeline.status is not OverlapStatus.NONE:
             self.slider.setRange(0, max(0, timeline.kept_frames - 1))
             self.slider.setEnabled(True)
         elif self.preview_total_frames > 0:
@@ -381,7 +382,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         )
         self.controller.pipeline.timeline = self.session.timeline
 
-        has_valid_overlap = timeline.status != "none"
+        has_valid_overlap = timeline.status is not OverlapStatus.NONE
         self.btn_convert.setEnabled(has_valid_overlap)
 
         self._refresh_slider_range()
@@ -461,7 +462,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.update_worker_data()
             if self.slider.isEnabled():
                 self.request_preview_update(self.slider.value())
-            QtWidgets.QApplication.restoreOverrideCursor()
+            if QtWidgets.QApplication.overrideCursor() is not None:
+                QtWidgets.QApplication.restoreOverrideCursor()
 
     @QtCore.Slot()
     def pick_video(self):
@@ -491,7 +493,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.start_preview_worker(path, self.session.video_info)
         self._refresh_timeline_and_aligned()
         self._refresh_info_panel()
-        QtWidgets.QApplication.restoreOverrideCursor()
+        if QtWidgets.QApplication.overrideCursor() is not None:
+            QtWidgets.QApplication.restoreOverrideCursor()
 
     @QtCore.Slot()
     def show_about(self):
@@ -511,7 +514,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             # Восстанавливаем btn_convert по состоянию timeline
             timeline = self.controller.pipeline.timeline
             self.btn_convert.setEnabled(
-                timeline is not None and timeline.status != "none"
+                timeline is not None and timeline.status is not OverlapStatus.NONE
             )
         else:
             self.btn_convert.setEnabled(False)

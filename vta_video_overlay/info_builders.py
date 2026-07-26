@@ -113,8 +113,12 @@ def build_timeline_selection(
     data_start = float(data_time[0])
     data_end = float(data_time[-1])
 
-    overlap_start = max(video_start, data_start)
-    overlap_end = min(video_end, data_end)
+    # Допуск для учета погрешностей тайминга кадров/данных
+    TIMELINE_TOLERANCE_SEC = 0.1
+    tol = TIMELINE_TOLERANCE_SEC
+
+    overlap_start = video_start if data_start <= video_start + tol else data_start
+    overlap_end = video_end if data_end >= video_end - tol else data_end
 
     if overlap_start >= overlap_end:
         return TimelineSelection(
@@ -129,29 +133,28 @@ def build_timeline_selection(
             trimmed_end_frames=int(np.sum(video_ts > overlap_end)),
             data_discarded_before_sec=max(0.0, video_start - data_start),
             data_discarded_after_sec=max(0.0, data_end - video_end),
-            video_trimmed_at_start=data_start > video_start,
-            video_trimmed_at_end=data_end < video_end,
+            video_trimmed_at_start=data_start > video_start + tol,
+            video_trimmed_at_end=data_end < video_end - tol,
             error_message="No temporal overlap between video and measurement data.",
         )
 
     overlap_duration = overlap_end - overlap_start
 
     # Нативное 1:1 VFR сопоставление физических кадров исходной видеозаписи
-    mask = (video_ts >= overlap_start) & (video_ts <= overlap_end)
+    mask = (video_ts >= overlap_start - 1e-5) & (video_ts <= overlap_end + 1e-5)
     kept_indices = np.where(mask)[0]
     kept_ts = video_ts[mask]
 
     trimmed_start = int(np.sum(video_ts < overlap_start - 1e-5))
     trimmed_end = int(np.sum(video_ts > overlap_end + 1e-5))
 
-    video_trimmed_at_start = data_start > video_start
-    video_trimmed_at_end = data_end < video_end
+    video_trimmed_at_start = trimmed_start > 0
+    video_trimmed_at_end = trimmed_end > 0
 
     data_discarded_before = max(0.0, video_start - data_start) if data_start < video_start - 1e-5 else 0.0
     data_discarded_after = max(0.0, data_end - video_end) if data_end > video_end + 1e-5 else 0.0
 
-    is_full = (trimmed_start == 0 and trimmed_end == 0
-               and data_discarded_before == 0.0 and data_discarded_after == 0.0)
+    is_full = (trimmed_start == 0 and trimmed_end == 0)
 
     return TimelineSelection(
         status=OverlapStatus.FULL if is_full else OverlapStatus.PARTIAL,

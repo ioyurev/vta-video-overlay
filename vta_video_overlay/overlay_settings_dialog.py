@@ -128,11 +128,11 @@ class OverlaySettingsDialog(QtWidgets.QDialog):
 
         # 4. Настройка числа потоков CPU
         import os
-        logical_count = os.cpu_count() or 4
+        self.logical_count = os.cpu_count() or 4
 
         layout_threads = QtWidgets.QVBoxLayout()
         self.cb_all_threads = QtWidgets.QCheckBox(
-            self.tr(f"Использовать все логические ядра ({logical_count})")
+            self.tr(f"Использовать все логические ядра ({self.logical_count})")
         )
 
         sub_layout_spin = QtWidgets.QHBoxLayout()
@@ -142,14 +142,14 @@ class OverlaySettingsDialog(QtWidgets.QDialog):
         self.spin_threads.setValue(config.video_encoding.render_threads)
         sub_layout_spin.addWidget(self.spin_threads)
 
-        is_all = config.video_encoding.render_threads >= logical_count
+        is_all = config.video_encoding.render_threads >= self.logical_count
         self.cb_all_threads.setChecked(is_all)
         self.spin_threads.setEnabled(not is_all)
 
         def on_cb_all_toggled(checked: bool):
             self.spin_threads.setEnabled(not checked)
             if checked:
-                self.spin_threads.setValue(logical_count)
+                self.spin_threads.setValue(self.logical_count)
 
         self.cb_all_threads.toggled.connect(on_cb_all_toggled)
 
@@ -188,10 +188,8 @@ class OverlaySettingsDialog(QtWidgets.QDialog):
         config.video_encoding.crf = self.slider_crf.value()
         config.video_encoding.preset = self.combo_preset.currentData()
 
-        import os
-        logical_count = os.cpu_count() or 4
         if self.cb_all_threads.isChecked():
-            config.video_encoding.render_threads = logical_count
+            config.video_encoding.render_threads = self.logical_count
         else:
             config.video_encoding.render_threads = self.spin_threads.value()
 

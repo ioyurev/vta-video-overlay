@@ -1,5 +1,6 @@
 import subprocess
 import time
+import uuid
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -15,8 +16,9 @@ from vta_video_overlay.ffmpeg_utils import build_codec_args
 from vta_video_overlay.frame_renderer import FrameRenderer
 from vta_video_overlay.info_models import TimelineSelection
 from vta_video_overlay.opencv_frame import CVFrame
+from vta_video_overlay.temp_dir_manager import TempDirManager
 from vta_video_overlay.video_context import VideoContext
-from vta_video_overlay.video_timing import compute_real_fps
+from vta_video_overlay.video_timing import build_vfr_setpts_script_content
 
 
 class CVProcessor(QtCore.QObject):
@@ -62,12 +64,14 @@ class CVProcessor(QtCore.QObject):
         else:
             size = (ensure_even(video_ctx.width), ensure_even(video_ctx.height))
 
-        # Для VFR-видео (переменная экспозиция камеры) CAP_PROP_FPS возвращает
-        # номинальный FPS, а не реальный. Вычисляем средний FPS из timestamps.
+        # Для VFR-видео (переменная экспозиция камеры) формируем фильтр точных меток времени (PTS)
         ts = self.timeline.kept_timestamps_sec
-        real_fps = compute_real_fps(ts) or video_ctx.fps
+        filter_script_text = build_vfr_setpts_script_content(ts)
+        script_file = TempDirManager.get_temp_dir() / f"vfr_setpts_{uuid.uuid4().hex}.txt"
+        script_file.parent.mkdir(parents=True, exist_ok=True)
+        script_file.write_text(filter_script_text, encoding="utf-8")
 
-        # Подготавливаем команду FFmpeg для прямого кодирования из stdin
+        # Подготавливаем команду FFmpeg для прямого кодирования из stdin с точными VFR PTS
         cmd = [
             "ffmpeg",
             "-y",
@@ -82,9 +86,11 @@ class CVProcessor(QtCore.QObject):
             "-pix_fmt",
             "bgr24",
             "-r",
-            str(real_fps),
+            "1000",
             "-i",
             "-",
+            "-filter_script:v",
+            str(script_file),
             "-c:v",
             config.video_encoding.codec,
             *build_codec_args(
@@ -94,6 +100,8 @@ class CVProcessor(QtCore.QObject):
             ),
             "-pix_fmt",
             config.video_encoding.pix_fmt,
+            "-fps_mode",
+            "vfr",
             str(self.path_output),
         ]
 
@@ -142,6 +150,11 @@ class CVProcessor(QtCore.QObject):
                     self.fps_signal.emit(batch_fps)
 
                 for idx, frame in results:
+                    curr_thread = QtCore.QThread.currentThread()
+                    if self.is_interrupted or (curr_thread and curr_thread.isInterruptionRequested()):
+                        log.warning("Processing interrupted during FFmpeg streaming.")
+                        break
+
                     if frame and proc.stdin:
                         try:
                             proc.stdin.write(frame.image.tobytes())
@@ -164,7 +177,14 @@ class CVProcessor(QtCore.QObject):
 
         proc.wait()
 
+        if script_file.exists():
+            try:
+                script_file.unlink()
+            except Exception as e:
+                log.debug(f"Error removing temporary script file: {e}")
+
         video_ctx.close()
         if not (self.is_interrupted or (curr_thread and curr_thread.isInterruptionRequested())):
             log.info(self.tr("OpenCV & FFmpeg Pipe rendering finished successfully"))
+
 

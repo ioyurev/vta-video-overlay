@@ -28,6 +28,12 @@ def get_graph_size(frame_width: int, frame_height: int) -> tuple[int, int]:
     return size, size
 
 
+def get_runtime_base_dir() -> Path:
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+        return Path(sys.executable).resolve().parent
+    return Path.cwd()
+
+
 def get_appdata_path() -> Path:
     app_folder = "vta_video_overlay"
     if sys.platform.startswith("linux"):
@@ -124,17 +130,22 @@ class Config(BaseModel):
         self._load_resources()
 
     def _load_resources(self) -> None:
-        if self.logo_enabled:
-            try:
-                logo_path = Path("logo.png") 
-                if logo_path.exists():
-                    self._logo_img = cv2.imread(str(logo_path))
-                
-                if self._logo_img is None:
-                    self.logo_enabled = False
-            except Exception as e:
-                log.error(f"Failed to load logo file: {e}")
+        self._logo_img = None
+
+        if not self.logo_enabled:
+            return
+
+        try:
+            logo_path = get_runtime_base_dir() / "logo.png"
+            if logo_path.exists():
+                self._logo_img = cv2.imread(str(logo_path))
+
+            if self._logo_img is None:
+                log.warning(f"Logo file not found or unreadable: {logo_path}")
                 self.logo_enabled = False
+        except Exception as e:
+            log.error(f"Failed to load logo file: {e}")
+            self.logo_enabled = False
 
     @property
     def logo_img(self) -> Any:
@@ -263,6 +274,7 @@ class Config(BaseModel):
     def update(self) -> None:
         """Сохраняет текущую конфигурацию в файл."""
         try:
+            self._load_resources()
             self.to_json_file(CONFIG_PATH)
             log.info("Config file updated")
         except Exception as e:

@@ -26,31 +26,26 @@ def make_frame(
         cvframe.crop_by_rect(crop_rect)
     
     # Логика наложения графика (OpenCV Overlay)
-    if graph_img is not None:
-        # Размеры графика
+    if (
+        graph_img is not None
+        and graph_img.ndim == 3
+        and graph_img.shape[2] == 4
+    ):
         gh, gw = graph_img.shape[:2]
-        # Размеры кадра
         fh, fw = cvframe.image.shape[:2]
-        
-        # Координаты (из конфига)
-        x_offset = fw - gw 
+
+        x_offset = fw - gw
         y_offset = config.text.margin_y
-        
-        # Проверяем, влезает ли график
-        if x_offset > 0 and y_offset + gh < fh and x_offset + gw <= fw:
-            # Вырезаем область интереса (ROI) из основного кадра
-            roi = cvframe.image[y_offset:y_offset+gh, x_offset:x_offset+gw]
-            
-            # Разделяем каналы графика (BGR и Alpha)
-            overlay_bgr = graph_img[:, :, :3]
-            overlay_alpha = graph_img[:, :, 3] / 255.0
-            
-            # Альфа-блендинг: (Overlay * Alpha) + (ROI * (1 - Alpha))
-            blended = (overlay_bgr * overlay_alpha[..., None] + 
-                       roi * (1.0 - overlay_alpha[..., None]))
-            
-            # Записываем обратно в кадр
-            cvframe.image[y_offset:y_offset+gh, x_offset:x_offset+gw] = blended.astype(np.uint8)
+
+        if x_offset >= 0 and y_offset >= 0 and y_offset + gh <= fh and x_offset + gw <= fw:
+            roi = cvframe.image[y_offset:y_offset + gh, x_offset:x_offset + gw]
+
+            overlay_bgr = graph_img[:, :, :3].astype(np.float32)
+            overlay_alpha = (graph_img[:, :, 3].astype(np.float32) / 255.0)[..., None]
+            roi_f = roi.astype(np.float32)
+
+            blended = overlay_bgr * overlay_alpha + roi_f * (1.0 - overlay_alpha)
+            cvframe.image[y_offset:y_offset + gh, x_offset:x_offset + gw] = blended.astype(np.uint8)
             
     if config.logo_enabled:
         cvframe.put_img(

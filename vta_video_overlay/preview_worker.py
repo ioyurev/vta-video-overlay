@@ -1,6 +1,7 @@
 from PySide6 import QtCore
 
 from vta_video_overlay.config import config
+from vta_video_overlay.enums import OverlapStatus
 from vta_video_overlay.video_context import VideoContext
 from vta_video_overlay.frame_renderer import FrameRenderer
 
@@ -33,7 +34,7 @@ class PreviewWorker(QtCore.QObject):
             self.renderer = None
             return
 
-        if timeline is not None and timeline.status != "none":
+        if timeline is not None and timeline.status is not OverlapStatus.NONE:
             timestamps = timeline.kept_timestamps_sec
         else:
             timestamps = None
@@ -68,7 +69,7 @@ class PreviewWorker(QtCore.QObject):
             return
 
         # Перевод индекса kept -> индекс исходного видео
-        if timeline is not None and timeline.status != "none":
+        if timeline is not None and timeline.status is not OverlapStatus.NONE:
             if frame_index >= len(timeline.source_frame_indices):
                 return
             source_idx = int(timeline.source_frame_indices[frame_index])
